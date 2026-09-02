@@ -64,4 +64,18 @@ struct ProjectStoreTests {
         let window = TerminalWindow(rect: CGRect(x: 10, y: 20, width: 300, height: 200))
         #expect(window == TerminalWindow(left: 10, top: 20, right: 310, bottom: 220))
     }
+
+    @Test func undecodableFileIsMovedAsideNotOverwritten() throws {
+        let url = tempFile()
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("not json".utf8).write(to: url)
+        let store = ProjectStore(fileURL: url)
+        #expect(store.projects.isEmpty)
+        let siblings = try FileManager.default.contentsOfDirectory(atPath: url.deletingLastPathComponent().path)
+        #expect(siblings.contains { $0.hasPrefix("projects.json.broken-") })
+        store.add(Project(name: "A", directory: "/a"))
+        let reloaded = try Data(contentsOf: url)
+        #expect(!reloaded.isEmpty)
+        #expect(ProjectStore(fileURL: url).projects.map(\.name) == ["A"])
+    }
 }

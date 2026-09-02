@@ -1,11 +1,15 @@
 import Foundation
 import Observation
+import os
 
 @MainActor
 @Observable
 final class ProjectStore {
     private(set) var projects: [Project] = []
     let fileURL: URL
+    private var saveDisabled = false
+
+    private static let logger = Logger(subsystem: "uk.co.29degrees.projects", category: "ProjectStore")
 
     nonisolated static var defaultFileURL: URL {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -14,9 +18,13 @@ final class ProjectStore {
 
     init(fileURL: URL = ProjectStore.defaultFileURL) {
         self.fileURL = fileURL
-        if let data = try? Data(contentsOf: fileURL),
-           let loaded = try? JSONDecoder().decode([Project].self, from: data) {
-            projects = loaded
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            projects = try JSONDecoder().decode([Project].self, from: data)
+        } catch {
+            Self.logger.error("Failed to load projects from \(fileURL.path, privacy: .public): \(String(describing: error), privacy: .public)")
+            moveAsideBrokenFile()
         }
     }
 
@@ -52,12 +60,30 @@ final class ProjectStore {
         }
     }
 
+    private func moveAsideBrokenFile() {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let brokenURL = URL(fileURLWithPath: fileURL.path + ".broken-\(formatter.string(from: Date()))")
+        do {
+            try FileManager.default.moveItem(at: fileURL, to: brokenURL)
+        } catch {
+            Self.logger.error("Failed to move aside broken projects file \(self.fileURL.path, privacy: .public): \(String(describing: error), privacy: .public)")
+            saveDisabled = true
+        }
+    }
+
     private func save() {
+        guard !saveDisabled else { return }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(projects) else { return }
-        let directory = fileURL.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try? data.write(to: fileURL, options: .atomic)
+        do {
+            let data = try encoder.encode(projects)
+            let directory = fileURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            Self.logger.error("Failed to save projects to \(self.fileURL.path, privacy: .public): \(String(describing: error), privacy: .public)")
+        }
     }
 }
