@@ -75,10 +75,15 @@ private struct ProjectEditor: View {
     }
 
     private func commitText() {
-        guard name != project.name || directory != project.directory else { return }
-        edit {
-            $0.name = name
-            $0.directory = directory
+        commitText(to: project.id)
+    }
+
+    private func commitText(to id: UUID) {
+        guard var target = state.projects.projects.first(where: { $0.id == id }) else { return }
+        if name != target.name || directory != target.directory {
+            target.name = name
+            target.directory = directory
+            state.projects.update(target)
         }
     }
 
@@ -147,7 +152,7 @@ private struct ProjectEditor: View {
         }
         .formStyle(.grouped)
         .onAppear(perform: seed)
-        .onChange(of: project.id) { _, _ in seed() }
+        .onChange(of: project.id) { old, _ in commitText(to: old); seed() }
         .onChange(of: focused) { old, new in
             if old == .name || old == .directory, new != old { commitText() }
         }
@@ -225,6 +230,7 @@ private struct GeneralTab: View {
     @Bindable var state: AppState
     @State private var duration = 1.0
     @State private var launchAtLogin = false
+    @State private var requiresApproval = false
 
     var body: some View {
         Form {
@@ -238,8 +244,9 @@ private struct GeneralTab: View {
             Toggle("Launch at login", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, value in
                     state.launchAtLogin = value
+                    requiresApproval = SMAppService.mainApp.status == .requiresApproval
                 }
-            if SMAppService.mainApp.status == .requiresApproval {
+            if requiresApproval {
                 Text("Waiting for approval in System Settings > General > Login Items.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -248,6 +255,7 @@ private struct GeneralTab: View {
         .onAppear {
             duration = state.overlayDuration
             launchAtLogin = state.launchAtLogin
+            requiresApproval = SMAppService.mainApp.status == .requiresApproval
         }
     }
 }
