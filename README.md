@@ -18,9 +18,9 @@ Spaces are created in Mission Control (Control+Up, then the + at the top right).
 
 ## Building and first run
 
-Open `Projects.xcodeproj` and press Run. The menu bar item appears at once; the app has no Dock icon.
+Open `Projects.xcodeproj` and press Run. The menu bar item appears at once; the app has no Dock icon and no main window.
 
-The project carries no signing team. Xcode signs the build to run locally, which is all the app needs. To sign with your own Apple Developer team instead, create a file named `Local.xcconfig` next to `Projects.xcodeproj` containing `DEVELOPMENT_TEAM = <your team ID>`; the file is git-ignored.
+The project file sets no signing team. Xcode signs the build to run locally, which is all the app needs. To sign with your own Apple Developer team instead, create a file named `Local.xcconfig` next to `Projects.xcodeproj` containing `DEVELOPMENT_TEAM = <your team ID>`; the file is git-ignored.
 
 A Run build is enough to keep using the app. Archive only to install a copy outside Xcode: Product > Archive, Distribute App > Custom > Copy App, then move `Projects.app` to `/Applications`.
 
@@ -43,15 +43,15 @@ The app switches Space by sending the keyboard shortcut macOS assigns to "Switch
 
 Those shortcuts are off by default. Enable them in System Settings > Keyboard > Keyboard Shortcuts > Mission Control. macOS lists one per Space that exists; desktops beyond 9 have no key assigned until you set one.
 
-The app reads the shortcuts from the system. The Shortcuts tab in Settings shows them and warns "Not set — switching will not work" for any Space without one. To give a Space a shortcut, tick that Space's "Switch to Desktop N" entry in the Mission Control list and assign a key.
+The app reads the shortcuts from the system. The Shortcuts tab in Settings lists them and shows "Not set — switching will not work" for any Space without one. To give a Space a shortcut, tick that Space's "Switch to Desktop N" entry in the Mission Control list and assign a key.
 
 ## Setting up a Space
 
 Open Settings from the menu, or press Command+comma while the menu is open. The Spaces tab lists every Space; click one to edit it.
 
 - Name: shown in the menu bar and the overlay. Left blank, the Space shows as "Desktop N".
-- "Open iTerm2 windows" reveals a directory field (blank means your home folder), a "Save current windows" button, the count of saved windows, and "Forget".
-- "Open Chrome window" reveals a list of URLs with add, remove and reorder. URLs must start with `http://` or `https://`.
+- "Open iTerm2 windows" shows a directory field (blank means your home folder), a "Save current windows" button, the count of saved windows, and "Forget".
+- "Open Chrome window" shows a list of URLs with add, remove and reorder. URLs must start with `http://` or `https://`.
 
 Menu > "Save iTerm2 windows" records the position of every iTerm2 window on the current Space. It is enabled only when "Open iTerm2 windows" is on for that Space.
 
@@ -62,9 +62,9 @@ Menu > "Open space setup", or Control+Shift+= from anywhere, opens the saved iTe
 - Overlay duration slider, 0.3 to 5 seconds.
 - Launch at login, on by default.
 
-## Where data lives
+## Where data is stored
 
-Space setups are stored in `~/Library/Application Support/uk.co.29degrees.projects/projects.json`. If `projects.json` cannot be read, the app moves it aside as `projects.json.broken-<timestamp>` and starts empty.
+Space setups are stored in `~/Library/Application Support/uk.co.29degrees.projects/projects.json`. If `projects.json` cannot be read, the app renames it to `projects.json.broken-<timestamp>` and starts with no setups.
 
 ## Caveats
 

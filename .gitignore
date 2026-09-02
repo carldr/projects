@@ -23,3 +23,7 @@ Package.resolved
 
 # macOS
 .DS_Store
+
+# Superpowers working documents (specs, plans, SDD workspace)
+docs/superpowers/
+.superpowers/
