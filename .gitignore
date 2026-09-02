@@ -13,6 +13,9 @@ build/
 timeline.xctimeline
 playground.xcworkspace
 
+# Per-developer signing settings
+Local.xcconfig
+
 # Swift Package Manager
 .build/
 .swiftpm/
