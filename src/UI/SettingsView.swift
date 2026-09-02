@@ -12,6 +12,8 @@ struct SettingsView: View {
             GeneralTab(state: state).tabItem { Label("General", systemImage: "gear") }
         }
         .frame(width: 620, height: 440)
+        // Spaces may have been added, removed or switched since the last read.
+        .onAppear { state.refresh(announce: false) }
     }
 }
 
@@ -204,6 +206,10 @@ private struct ShortcutsTab: View {
                                 state.registerHotKey()
                             }
                         }))
+                }
+                if !state.hotKeyRegistered {
+                    Text("Could not register this hotkey. Another app may already use it.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
 

@@ -7,24 +7,30 @@ nonisolated struct KeyCombo: Codable, Equatable, Sendable {
     var option = false
     var shift = false
     var command = false
+    /// The character the key produces, for keys the name table does not
+    /// cover. Absent from shortcuts stored before it existed, so optional.
+    var label: String? = nil
 
     init(keyCode: UInt16, control: Bool = false, option: Bool = false,
-         shift: Bool = false, command: Bool = false) {
+         shift: Bool = false, command: Bool = false, label: String? = nil) {
         self.keyCode = keyCode
         self.control = control
         self.option = option
         self.shift = shift
         self.command = command
+        self.label = label
     }
 
     @MainActor
     init(event: NSEvent) {
         let flags = event.modifierFlags
+        let characters = event.charactersIgnoringModifiers?.uppercased()
         self.init(keyCode: event.keyCode,
                   control: flags.contains(.control),
                   option: flags.contains(.option),
                   shift: flags.contains(.shift),
-                  command: flags.contains(.command))
+                  command: flags.contains(.command),
+                  label: (characters?.isEmpty == false) ? characters : nil)
     }
 
     var cgFlags: CGEventFlags {
@@ -51,7 +57,7 @@ nonisolated struct KeyCombo: Codable, Equatable, Sendable {
         if option { text += "⌥" }
         if shift { text += "⇧" }
         if command { text += "⌘" }
-        return text + Self.keyName(keyCode)
+        return text + (label ?? Self.keyName(keyCode))
     }
 
     /// ANSI virtual key codes for the digit row, keyed by digit.

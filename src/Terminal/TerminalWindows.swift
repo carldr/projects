@@ -37,12 +37,13 @@ nonisolated enum TerminalWindows {
         """
     }
 
-    /// Precondition: urls is non-empty.
+    /// The empty string when urls is empty.
     static func chromeScript(urls: [String]) -> String {
+        guard let first = urls.first else { return "" }
         var lines = [
             "tell application \"Google Chrome\"",
             "\tset w to make new window",
-            "\tset URL of active tab of w to \(appleScriptQuoted(urls[0]))",
+            "\tset URL of active tab of w to \(appleScriptQuoted(first))",
         ]
         for url in urls.dropFirst() {
             lines.append("\tmake new tab at end of tabs of w with properties {URL:\(appleScriptQuoted(url))}")

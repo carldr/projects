@@ -1,4 +1,5 @@
 import Testing
+import CoreGraphics
 import Foundation
 @testable import Projects
 
@@ -18,6 +19,17 @@ struct TerminalWindowsTests {
     @Test func opensNothingWhenEnoughExist() {
         #expect(TerminalWindows.framesToOpen(saved: [a, b], existingCount: 2).isEmpty)
         #expect(TerminalWindows.framesToOpen(saved: [a, b], existingCount: 5).isEmpty)
+    }
+
+    /// WindowLister lists front to back and AppState saves that reversed, so
+    /// the frames framesToOpen takes from the end are the frontmost windows.
+    @Test func savedOrderRoundTripsThroughFramesToOpen() {
+        let front = CGRect(x: 0, y: 25, width: 800, height: 600)
+        let middle = CGRect(x: 800, y: 25, width: 800, height: 600)
+        let back = CGRect(x: 1728, y: 0, width: 772, height: 900)
+        let saved = [front, middle, back].reversed().map(TerminalWindow.init(rect:))
+        #expect(TerminalWindows.framesToOpen(saved: saved, existingCount: 1)
+            == [TerminalWindow(rect: middle), TerminalWindow(rect: front)])
     }
 
     @Test func shellQuotingHandlesSingleQuotes() {

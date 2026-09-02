@@ -14,6 +14,7 @@ final class AppState {
     private static let overlayDurationKey = "overlayDuration"
 
     private(set) var snapshot: SpaceSnapshot = .empty
+    private(set) var hotKeyRegistered = false
     let projects: ProjectStore
     let shortcuts: ShortcutStore
 
@@ -46,8 +47,19 @@ final class AppState {
 
     // MARK: Lifecycle
 
+    /// True while the app is hosting the test bundle.
+    nonisolated static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || ProcessInfo.processInfo.environment["XCTestBundlePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    }
+
     /// Begins observing space changes and registers the hotkey. Call once from the app.
     func start() {
+        // The test bundle is hosted by the app, so a test run launches it.
+        // Starting there would register a login item and a global hotkey on
+        // the machine running the tests.
+        guard !Self.isRunningTests else { return }
         refresh(announce: false)
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
@@ -86,11 +98,15 @@ final class AppState {
 
     func refresh(announce: Bool) {
         snapshot = SpaceList.parse(provider.displaySpaces())
+        // The raw current UUID is tracked even when it names a full-screen
+        // space, so that coming back from one to the desktop it was entered
+        // from counts as a change and shows the overlay again.
+        let previous = lastAnnouncedUUID
+        lastAnnouncedUUID = snapshot.currentUUID
         guard let space = currentSpace else { return }
-        if announce, space.uuid != lastAnnouncedUUID {
+        if announce, space.uuid != previous {
             overlay.show(displayName(for: space), visibleFor: overlayDuration)
         }
-        lastAnnouncedUUID = space.uuid
     }
 
     func switchTo(_ space: Space) {
@@ -135,10 +151,14 @@ final class AppState {
     }
 
     func openProject() {
-        guard let project = currentProject else { return }
+        guard let project = currentProject else {
+            overlay.show("No project on this space", visibleFor: overlayDuration)
+            return
+        }
+        let directory = (project.directory as NSString).expandingTildeInPath
         var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: project.directory, isDirectory: &isDirectory), isDirectory.boolValue else {
-            showAlert("The directory for \(project.name) does not exist:\n\(project.directory)")
+        guard FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue else {
+            showAlert("The directory for \(project.name) does not exist:\n\(directory)")
             return
         }
         let plan = Self.plan(
@@ -147,7 +167,7 @@ final class AppState {
             existingChromeWindows: WindowLister.onScreenBounds(ownerName: WindowLister.chromeOwner).count)
         do {
             for window in plan.terminals {
-                try AppleScriptRunner.run(TerminalWindows.iTermScript(window: window, directory: project.directory))
+                try AppleScriptRunner.run(TerminalWindows.iTermScript(window: window, directory: directory))
             }
             if plan.openChrome {
                 try AppleScriptRunner.run(TerminalWindows.chromeScript(urls: project.urls))
@@ -160,6 +180,13 @@ final class AppState {
     func saveTerminalWindows() {
         guard var project = currentProject else { return }
         let bounds = WindowLister.onScreenBounds(ownerName: WindowLister.iTermOwner)
+        guard !bounds.isEmpty else {
+            overlay.show("No iTerm2 windows on this space", visibleFor: overlayDuration)
+            return
+        }
+        // WindowLister returns front to back; the list is stored back to front
+        // because TerminalWindows.framesToOpen takes its suffix, so the
+        // windows opened when some already exist are the frontmost ones.
         project.windows = bounds.reversed().map(TerminalWindow.init(rect:))
         projects.update(project)
         overlay.show("Saved \(bounds.count) window\(bounds.count == 1 ? "" : "s")", visibleFor: overlayDuration)
@@ -167,6 +194,9 @@ final class AppState {
 
     // MARK: Settings values
 
+    // @Observable does not track `overlayDuration` or `launchAtLogin`: both
+    // read state outside the class (UserDefaults, SMAppService), so a view
+    // that shows them keeps its own @State copy and seeds it in onAppear.
     var overlayDuration: Double {
         get { defaults.object(forKey: Self.overlayDurationKey) as? Double ?? 1.0 }
         set { defaults.set(newValue, forKey: Self.overlayDurationKey) }
@@ -190,15 +220,20 @@ final class AppState {
     func registerHotKey() {
         openHotKey?.unregister()
         openHotKey = HotKey(combo: shortcuts.openProject) { [weak self] in self?.openProject() }
+        hotKeyRegistered = openHotKey != nil
     }
 
     // MARK: Alerts
 
     private func showAlert(_ message: String) {
-        NSApp.activate()
-        let alert = NSAlert()
-        alert.messageText = "Projects"
-        alert.informativeText = message
-        alert.runModal()
+        // Deferred to the next runloop turn: a modal run during launch, or
+        // from inside a menu action, blocks the app before it is ready.
+        Task { @MainActor in
+            NSApp.activate()
+            let alert = NSAlert()
+            alert.messageText = "Projects"
+            alert.informativeText = message
+            alert.runModal()
+        }
     }
 }

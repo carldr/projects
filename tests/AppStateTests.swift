@@ -70,6 +70,18 @@ struct AppStateTests {
         #expect(overlay.shown == ["Desktop 1", "Desktop 2"])
     }
 
+    @Test func returningFromFullScreenReannounces() {
+        let provider = FakeProvider(Self.displays(["a", "b"], current: "a"))
+        let overlay = FakeOverlay()
+        let state = makeState(provider, overlay: overlay)
+        state.refresh(announce: true)
+        provider.displays = Self.displays(["a", "b"], current: "fs")
+        state.refresh(announce: true)
+        provider.displays = Self.displays(["a", "b"], current: "a")
+        state.refresh(announce: true)
+        #expect(overlay.shown == ["Desktop 1", "Desktop 1"])
+    }
+
     @Test func createProjectAssignsToSpace() {
         let state = makeState(FakeProvider(Self.displays(["a"], current: "a")))
         state.refresh(announce: false)

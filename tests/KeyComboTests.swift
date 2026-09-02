@@ -51,4 +51,12 @@ struct KeyComboTests {
         let data = try JSONEncoder().encode(combo)
         #expect(try JSONDecoder().decode(KeyCombo.self, from: data) == combo)
     }
+
+    @Test func labelNamesKeysOutsideTheTableAndRoundTrips() throws {
+        let combo = KeyCombo(keyCode: 35, control: true, shift: true, label: "P")
+        #expect(combo.display == "⌃⇧P")
+        let data = try JSONEncoder().encode(combo)
+        #expect(try JSONDecoder().decode(KeyCombo.self, from: data) == combo)
+        #expect(KeyCombo(keyCode: 18, control: true).display == "⌃1")
+    }
 }
