@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 import SwiftUI
 
 struct SettingsView: View {
@@ -53,9 +54,14 @@ private struct ProjectsTab: View {
 }
 
 private struct ProjectEditor: View {
+    private enum Field { case name, directory }
+
     @Bindable var state: AppState
     let project: Project
     @State private var newURL = ""
+    @State private var name = ""
+    @State private var directory = ""
+    @FocusState private var focused: Field?
 
     private func edit(_ change: (inout Project) -> Void) {
         var copy = project
@@ -63,12 +69,29 @@ private struct ProjectEditor: View {
         state.projects.update(copy)
     }
 
+    private func seed() {
+        name = project.name
+        directory = project.directory
+    }
+
+    private func commitText() {
+        guard name != project.name || directory != project.directory else { return }
+        edit {
+            $0.name = name
+            $0.directory = directory
+        }
+    }
+
     var body: some View {
         Form {
-            TextField("Name", text: Binding(get: { project.name }, set: { name in edit { $0.name = name } }))
+            TextField("Name", text: $name)
+                .focused($focused, equals: .name)
+                .onSubmit(commitText)
 
             HStack {
-                TextField("Directory", text: Binding(get: { project.directory }, set: { dir in edit { $0.directory = dir } }))
+                TextField("Directory", text: $directory)
+                    .focused($focused, equals: .directory)
+                    .onSubmit(commitText)
                 Button("Choose…") {
                     let panel = NSOpenPanel()
                     panel.canChooseDirectories = true
@@ -76,6 +99,7 @@ private struct ProjectEditor: View {
                     panel.directoryURL = URL(fileURLWithPath: project.directory)
                     if panel.runModal() == .OK, let url = panel.url {
                         edit { $0.directory = url.path }
+                        directory = url.path
                     }
                 }
             }
@@ -103,11 +127,16 @@ private struct ProjectEditor: View {
                     HStack {
                         Text(url).lineLimit(1).truncationMode(.middle)
                         Spacer()
+                        Button { edit { $0.urls.swapAt(index, index - 1) } } label: { Image(systemName: "chevron.up") }
+                            .buttonStyle(.borderless)
+                            .disabled(index == 0)
+                        Button { edit { $0.urls.swapAt(index, index + 1) } } label: { Image(systemName: "chevron.down") }
+                            .buttonStyle(.borderless)
+                            .disabled(index == project.urls.count - 1)
                         Button { edit { $0.urls.remove(at: index) } } label: { Image(systemName: "minus.circle") }
                             .buttonStyle(.borderless)
                     }
                 }
-                .onMove { from, to in edit { $0.urls.move(fromOffsets: from, toOffset: to) } }
                 HStack {
                     TextField("https://…", text: $newURL)
                         .onSubmit(addURL)
@@ -117,6 +146,12 @@ private struct ProjectEditor: View {
             }
         }
         .formStyle(.grouped)
+        .onAppear(perform: seed)
+        .onChange(of: project.id) { _, _ in seed() }
+        .onChange(of: focused) { old, new in
+            if old == .name || old == .directory, new != old { commitText() }
+        }
+        .onDisappear(perform: commitText)
     }
 
     private func addURL() {
@@ -136,7 +171,6 @@ private struct ProjectEditor: View {
 private struct ShortcutsTab: View {
     @Bindable var state: AppState
     @State private var trusted = SpaceSwitcher.isTrusted
-    @State private var openCombo: KeyCombo? = nil
 
     var body: some View {
         Form {
@@ -204,8 +238,11 @@ private struct GeneralTab: View {
             Toggle("Launch at login", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, value in
                     state.launchAtLogin = value
-                    launchAtLogin = state.launchAtLogin
                 }
+            if SMAppService.mainApp.status == .requiresApproval {
+                Text("Waiting for approval in System Settings > General > Login Items.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .onAppear {

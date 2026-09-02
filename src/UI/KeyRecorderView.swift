@@ -8,6 +8,8 @@ struct KeyRecorderView: View {
     @State private var recording = false
     @State private var monitor: Any?
 
+    @MainActor private static var stopActive: (() -> Void)?
+
     var body: some View {
         Button {
             recording ? stop() : start()
@@ -19,6 +21,7 @@ struct KeyRecorderView: View {
     }
 
     private func start() {
+        Self.stopActive?()
         recording = true
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if event.keyCode == 53 { // Escape
@@ -33,11 +36,13 @@ struct KeyRecorderView: View {
             }
             return event
         }
+        Self.stopActive = { [self] in self.stop() }
     }
 
     private func stop() {
         recording = false
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
+        Self.stopActive = nil
     }
 }
