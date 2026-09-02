@@ -24,8 +24,8 @@ struct MenuBarView: View {
 
             Button("Open space setup") { state.openSpaceSetup() }
                 .disabled(!state.canOpenCurrentSpace)
-            Button("Save terminal windows") { state.saveTerminalWindows() }
-                .disabled(state.currentSpace == nil)
+            Button("Save iTerm2 windows") { state.saveTerminalWindows() }
+                .disabled(!state.canSaveCurrentSpace)
 
             Divider()
 

@@ -11,9 +11,23 @@ struct SettingsView: View {
             ShortcutsTab(state: state).tabItem { Label("Shortcuts", systemImage: "keyboard") }
             GeneralTab(state: state).tabItem { Label("General", systemImage: "gear") }
         }
-        .frame(width: 620, height: 440)
+        .frame(width: 820, height: 480)
+        .background(JoinAllSpaces())
         // Spaces may have been added, removed or switched since the last read.
         .onAppear { state.refresh(announce: false) }
+    }
+}
+
+/// Makes the window that hosts this view follow the user across spaces.
+private struct JoinAllSpaces: NSViewRepresentable {
+    func makeNSView(context: Context) -> Marker { Marker() }
+    func updateNSView(_ view: Marker, context: Context) {}
+
+    final class Marker: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            window?.collectionBehavior.insert(.canJoinAllSpaces)
+        }
     }
 }
 

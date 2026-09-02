@@ -163,7 +163,7 @@ final class AppState {
         let hasTerminals = project.openTerminals && !project.windows.isEmpty
         let hasChrome = project.openChrome && !project.urls.isEmpty
         if project.openTerminals, project.windows.isEmpty, !hasChrome {
-            return "No saved terminal windows for this space"
+            return "No saved iTerm2 windows for this space"
         }
         if project.openChrome, project.urls.isEmpty, !hasTerminals {
             return "No URLs set for this space"
@@ -211,9 +211,11 @@ final class AppState {
 
     var canOpenCurrentSpace: Bool { currentProject.map { $0.openTerminals || $0.openChrome } ?? false }
 
+    /// Saving only makes sense once "Open iTerm2 windows" is on for the space.
+    var canSaveCurrentSpace: Bool { currentProject?.openTerminals ?? false }
+
     func saveTerminalWindows() {
-        guard let space = currentSpace else { return }
-        var project = configuration(for: space)
+        guard let space = currentSpace, var project = project(for: space), project.openTerminals else { return }
         let bounds = WindowLister.onScreenBounds(ownerName: WindowLister.iTermOwner)
         guard !bounds.isEmpty else {
             overlay.show("No iTerm2 windows on this space", visibleFor: overlayDuration)
@@ -223,7 +225,6 @@ final class AppState {
         // because TerminalWindows.framesToOpen takes its suffix, so the
         // windows opened when some already exist are the frontmost ones.
         project.windows = bounds.reversed().map(TerminalWindow.init(rect:))
-        project.openTerminals = true
         update(project)
         overlay.show("Saved \(bounds.count) window\(bounds.count == 1 ? "" : "s")", visibleFor: overlayDuration)
     }

@@ -12,6 +12,7 @@ protocol OverlayShowing {
 @MainActor
 final class OverlayPanel: OverlayShowing {
     private let panel: NSPanel
+    private let hosting: NSHostingView<OverlayView>
     private var hideTask: Task<Void, Never>?
 
     init() {
@@ -24,14 +25,21 @@ final class OverlayPanel: OverlayShowing {
         panel.ignoresMouseEvents = true
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        hosting = NSHostingView(rootView: OverlayView(text: ""))
+        // The panel is sized by hand below. With .minSize/.maxSize on, the
+        // hosting view also drives the window's size from its content, and
+        // the two fight until AppKit throws NSGenericException for running
+        // too many "Update Constraints in Window" passes. Keep only the
+        // option that reports the content's own size.
+        hosting.sizingOptions = [.intrinsicContentSize]
+        panel.contentView = hosting
     }
 
     func show(_ text: String, visibleFor duration: TimeInterval) {
         hideTask?.cancel()
-        let view = NSHostingView(rootView: OverlayView(text: text))
-        let size = view.fittingSize
-        view.frame = NSRect(origin: .zero, size: size)
-        panel.contentView = view
+        hosting.rootView = OverlayView(text: text)
+        let size = hosting.intrinsicContentSize
+        hosting.frame = NSRect(origin: .zero, size: size)
         panel.setContentSize(size)
         if let screen = NSScreen.screens.first {
             let frame = screen.frame
