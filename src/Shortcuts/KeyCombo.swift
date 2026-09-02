@@ -79,15 +79,5 @@ nonisolated struct KeyCombo: Codable, Equatable, Sendable {
 }
 
 nonisolated enum DefaultShortcuts {
-    /// Control+1…9 for 1–9, Control+0 for 10, Control+Option+1…9 for 11–19.
-    static func combo(forSpace number: Int) -> KeyCombo? {
-        switch number {
-        case 1...9: KeyCombo(keyCode: KeyCombo.digitKeyCodes[number]!, control: true)
-        case 10: KeyCombo(keyCode: KeyCombo.digitKeyCodes[0]!, control: true)
-        case 11...19: KeyCombo(keyCode: KeyCombo.digitKeyCodes[number - 10]!, control: true, option: true)
-        default: nil
-        }
-    }
-
     static let openProject = KeyCombo(keyCode: UInt16(kVK_ANSI_Equal), control: true, shift: true)
 }

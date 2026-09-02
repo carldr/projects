@@ -25,14 +25,16 @@ struct AppStateTests {
     // that constructs a @MainActor-isolated type (FakeOverlay, via
     // OverlayShowing) fails to typecheck ("call to main actor-isolated
     // initializer 'init()' in a synchronous nonisolated context").
-    func makeState(_ provider: FakeProvider, overlay: FakeOverlay? = nil) -> AppState {
+    func makeState(_ provider: FakeProvider, overlay: FakeOverlay? = nil,
+                   shortcuts: [Int: KeyCombo] = [:]) -> AppState {
         let overlay = overlay ?? FakeOverlay()
         let file = FileManager.default.temporaryDirectory
             .appendingPathComponent("AppStateTests-\(UUID().uuidString)/projects.json")
         let suite = "AppStateTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defaults.removePersistentDomain(forName: suite)
-        return AppState(provider: provider, projects: ProjectStore(fileURL: file),
+        return AppState(provider: provider, shortcutReader: { shortcuts },
+                        projects: ProjectStore(fileURL: file),
                         shortcuts: ShortcutStore(defaults: defaults), overlay: overlay, defaults: defaults)
     }
 
@@ -115,6 +117,14 @@ struct AppStateTests {
     @Test func planSkipsChromeWithoutUrls() {
         let project = Project(name: "P", directory: "/tmp")
         #expect(!AppState.plan(for: project, existingTerminals: 0, existingChromeWindows: 0).openChrome)
+    }
+
+    @Test func refreshLoadsMissionControlShortcuts() {
+        let combo = KeyCombo(keyCode: 19, control: true)
+        let state = makeState(FakeProvider(Self.displays(["a", "b"], current: "a")), shortcuts: [2: combo])
+        state.refresh(announce: false)
+        #expect(state.shortcut(for: state.snapshot.spaces[1]) == combo)
+        #expect(state.shortcut(for: state.snapshot.spaces[0]) == nil)
     }
 
     @Test func overlayDurationDefaultsToOneSecondAndPersists() {

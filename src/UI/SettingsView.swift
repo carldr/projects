@@ -184,16 +184,20 @@ private struct ShortcutsTab: View {
             Section("Switch to space") {
                 ForEach(state.snapshot.spaces) { space in
                     LabeledContent("\(space.number) \(state.displayName(for: space))") {
-                        HStack {
-                            KeyRecorderView(combo: Binding(
-                                get: { state.shortcuts.combo(forSpace: space.number) },
-                                set: { state.shortcuts.set($0, forSpace: space.number) }))
-                            Button("Reset") { state.shortcuts.set(nil, forSpace: space.number) }
+                        if let combo = state.shortcut(for: space) {
+                            Text(combo.display).monospaced()
+                        } else {
+                            Label("Not set — switching will not work", systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(.orange)
                         }
                     }
                 }
-                Text("These must match the “Switch to Desktop N” shortcuts enabled in System Settings > Keyboard > Keyboard Shortcuts > Mission Control.")
-                    .font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Text("These are the “Switch to Desktop N” shortcuts from System Settings > Keyboard > Keyboard Shortcuts > Mission Control.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Open System Settings") { AppState.openMissionControlShortcutsPane() }
+                }
             }
 
             Section("Open project") {

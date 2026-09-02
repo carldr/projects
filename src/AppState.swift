@@ -15,10 +15,12 @@ final class AppState {
 
     private(set) var snapshot: SpaceSnapshot = .empty
     private(set) var hotKeyRegistered = false
+    private(set) var missionControlShortcuts: [Int: KeyCombo] = [:]
     let projects: ProjectStore
     let shortcuts: ShortcutStore
 
     private let provider: SpaceProviding
+    private let shortcutReader: () -> [Int: KeyCombo]
     private let overlay: OverlayShowing
     private let defaults: UserDefaults
     private var lastAnnouncedUUID: String?
@@ -34,11 +36,13 @@ final class AppState {
     // nonisolated context"). Resolving the default inside the (MainActor)
     // body avoids that restriction.
     init(provider: SpaceProviding = SpaceProvider(),
+         shortcutReader: @escaping () -> [Int: KeyCombo] = MissionControlShortcuts.current,
          projects: ProjectStore? = nil,
          shortcuts: ShortcutStore? = nil,
          overlay: OverlayShowing? = nil,
          defaults: UserDefaults = .standard) {
         self.provider = provider
+        self.shortcutReader = shortcutReader
         self.projects = projects ?? ProjectStore()
         self.shortcuts = shortcuts ?? ShortcutStore()
         self.overlay = overlay ?? OverlayPanel()
@@ -97,6 +101,7 @@ final class AppState {
     }
 
     func refresh(announce: Bool) {
+        missionControlShortcuts = shortcutReader()
         snapshot = SpaceList.parse(provider.displaySpaces())
         // The raw current UUID is tracked even when it names a full-screen
         // space, so that coming back from one to the desktop it was entered
@@ -109,9 +114,11 @@ final class AppState {
         }
     }
 
+    func shortcut(for space: Space) -> KeyCombo? { missionControlShortcuts[space.number] }
+
     func switchTo(_ space: Space) {
-        guard let combo = shortcuts.combo(forSpace: space.number) else {
-            showAlert("No shortcut is set for space \(space.number). Add one in Settings > Shortcuts.")
+        guard let combo = shortcut(for: space) else {
+            showAlert("Desktop \(space.number) has no Mission Control shortcut, so it cannot be switched to. Enable “Switch to Desktop \(space.number)” in System Settings > Keyboard > Keyboard Shortcuts > Mission Control.")
             return
         }
         guard SpaceSwitcher.isTrusted else {
@@ -122,6 +129,10 @@ final class AppState {
     }
 
     var accessibilityGranted: Bool { SpaceSwitcher.isTrusted }
+
+    static func openMissionControlShortcutsPane() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension?Shortcuts")!)
+    }
 
     // MARK: Projects
 

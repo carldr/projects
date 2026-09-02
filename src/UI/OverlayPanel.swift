@@ -33,7 +33,7 @@ final class OverlayPanel: OverlayShowing {
         view.frame = NSRect(origin: .zero, size: size)
         panel.contentView = view
         panel.setContentSize(size)
-        if let screen = NSScreen.main ?? NSScreen.screens.first {
+        if let screen = NSScreen.screens.first {
             let frame = screen.frame
             panel.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.midY - size.height / 2))
         }

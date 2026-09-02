@@ -7,6 +7,7 @@ struct MenuBarView: View {
     var body: some View {
         Group {
             ForEach(state.snapshot.spaces) { space in
+                let hasShortcut = state.shortcut(for: space) != nil
                 Toggle(isOn: Binding(
                     get: { space.uuid == state.snapshot.currentUUID },
                     set: { _ in
@@ -14,8 +15,9 @@ struct MenuBarView: View {
                         state.switchTo(space)
                     }
                 )) {
-                    Text("\(space.number) \(state.displayName(for: space))")
+                    Text("\(space.number) \(state.displayName(for: space))" + (hasShortcut ? "" : " (no shortcut)"))
                 }
+                .disabled(!hasShortcut)
             }
 
             Divider()
