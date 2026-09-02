@@ -1,13 +1,13 @@
 import Foundation
 
-protocol SpaceProviding {
+nonisolated protocol SpaceProviding {
     /// Raw per-display dictionaries from CGSCopyManagedDisplaySpaces.
     func displaySpaces() -> [[String: Any]]
 }
 
 /// Loads the private SkyLight functions at runtime. If either symbol is
 /// missing the provider returns an empty list, so the app keeps running.
-struct SpaceProvider: SpaceProviding {
+nonisolated struct SpaceProvider: SpaceProviding {
     private typealias MainConnectionFn = @convention(c) () -> Int32
     private typealias CopySpacesFn = @convention(c) (Int32) -> Unmanaged<CFArray>?
 
