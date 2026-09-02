@@ -158,6 +158,19 @@ final class AppState {
             openChrome: project.openChrome && !project.urls.isEmpty && existingChromeWindows == 0)
     }
 
+    /// Why a space whose setup is enabled still has nothing to open.
+    static func emptyPlanMessage(for project: Project) -> String {
+        let hasTerminals = project.openTerminals && !project.windows.isEmpty
+        let hasChrome = project.openChrome && !project.urls.isEmpty
+        if project.openTerminals, project.windows.isEmpty, !hasChrome {
+            return "No saved terminal windows for this space"
+        }
+        if project.openChrome, project.urls.isEmpty, !hasTerminals {
+            return "No URLs set for this space"
+        }
+        return "Already open"
+    }
+
     func openSpaceSetup() {
         guard let space = currentSpace, let project = currentProject,
               project.openTerminals || project.openChrome else {
@@ -166,7 +179,9 @@ final class AppState {
         }
         // The record's own name may be empty; the space's display name is not.
         let name = displayName(for: space)
-        let directory = (project.directory as NSString).expandingTildeInPath
+        // An unset directory means the home folder, as the Settings field says.
+        let stored = project.directory.trimmingCharacters(in: .whitespaces)
+        let directory = stored.isEmpty ? NSHomeDirectory() : (stored as NSString).expandingTildeInPath
         if project.openTerminals {
             var isDirectory: ObjCBool = false
             guard FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue else {
@@ -178,6 +193,10 @@ final class AppState {
             for: project,
             existingTerminals: WindowLister.onScreenBounds(ownerName: WindowLister.iTermOwner).count,
             existingChromeWindows: WindowLister.onScreenBounds(ownerName: WindowLister.chromeOwner).count)
+        guard !plan.terminals.isEmpty || plan.openChrome else {
+            overlay.show(Self.emptyPlanMessage(for: project), visibleFor: overlayDuration)
+            return
+        }
         do {
             for window in plan.terminals {
                 try AppleScriptRunner.run(TerminalWindows.iTermScript(window: window, directory: directory))

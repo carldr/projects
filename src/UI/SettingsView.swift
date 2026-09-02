@@ -93,7 +93,7 @@ private struct SpaceEditor: View {
             if project.openTerminals {
                 Section("iTerm2") {
                     HStack {
-                        TextField("Directory", text: $directory)
+                        TextField("Directory", text: $directory, prompt: Text("Home folder"))
                             .focused($focused, equals: .directory)
                             .onSubmit(commitText)
                         Button("Choose…") {
@@ -201,7 +201,7 @@ private struct ShortcutsTab: View {
                 }
             }
 
-            Section("Open project") {
+            Section("Open space setup") {
                 LabeledContent("Hotkey") {
                     KeyRecorderView(combo: Binding(
                         get: { state.shortcuts.openProject },

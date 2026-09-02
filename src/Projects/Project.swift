@@ -28,9 +28,9 @@ nonisolated struct Project: Codable, Equatable, Identifiable, Sendable {
     var spaceUUID: String? = nil
     var windows: [TerminalWindow] = []
     var urls: [String] = []
-    /// Whether "Open" recreates the saved iTerm2 windows.
+    /// Whether "Open space setup" recreates the saved iTerm2 windows.
     var openTerminals = false
-    /// Whether "Open" opens a Chrome window with `urls`.
+    /// Whether "Open space setup" opens a Chrome window with `urls`.
     var openChrome = false
 
     init(id: UUID = UUID(), name: String, directory: String, spaceUUID: String? = nil,
