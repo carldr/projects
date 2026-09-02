@@ -92,7 +92,8 @@ final class AppState {
     }
 
     func displayName(for space: Space) -> String {
-        project(for: space)?.name ?? "Desktop \(space.number)"
+        if let name = project(for: space)?.name, !name.isEmpty { return name }
+        return "Desktop \(space.number)"
     }
 
     var menuTitle: String {
@@ -136,41 +137,42 @@ final class AppState {
 
     // MARK: Projects
 
-    @discardableResult
-    func createProject(named name: String, on space: Space?) -> Project {
-        let project = Project(name: name, directory: NSHomeDirectory(), spaceUUID: space?.uuid)
-        projects.add(project)
-        return project
+    /// The stored record for the space, or an unsaved default when none exists.
+    func configuration(for space: Space) -> Project {
+        project(for: space) ?? Project(name: "", directory: "", spaceUUID: space.uuid)
     }
 
-    /// Assigns the project to the space, or clears the space when project is nil.
-    func assign(project: Project?, to space: Space) {
-        if var existing = projects.project(forSpace: space.uuid), existing.id != project?.id {
-            existing.spaceUUID = nil
-            projects.update(existing)
-        }
-        if var project {
-            project.spaceUUID = space.uuid
+    /// Saves the record, creating it on first edit.
+    func update(_ project: Project) {
+        if projects.projects.contains(where: { $0.id == project.id }) {
             projects.update(project)
+        } else {
+            projects.add(project)
         }
     }
 
     static func plan(for project: Project, existingTerminals: Int, existingChromeWindows: Int) -> OpenProjectPlan {
         OpenProjectPlan(
-            terminals: TerminalWindows.framesToOpen(saved: project.windows, existingCount: existingTerminals),
-            openChrome: !project.urls.isEmpty && existingChromeWindows == 0)
+            terminals: project.openTerminals
+                ? TerminalWindows.framesToOpen(saved: project.windows, existingCount: existingTerminals) : [],
+            openChrome: project.openChrome && !project.urls.isEmpty && existingChromeWindows == 0)
     }
 
-    func openProject() {
-        guard let project = currentProject else {
-            overlay.show("No project on this space", visibleFor: overlayDuration)
+    func openSpaceSetup() {
+        guard let space = currentSpace, let project = currentProject,
+              project.openTerminals || project.openChrome else {
+            overlay.show("Nothing to open for this space", visibleFor: overlayDuration)
             return
         }
+        // The record's own name may be empty; the space's display name is not.
+        let name = displayName(for: space)
         let directory = (project.directory as NSString).expandingTildeInPath
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue else {
-            showAlert("The directory for \(project.name) does not exist:\n\(directory)")
-            return
+        if project.openTerminals {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue else {
+                showAlert("The directory for \(name) does not exist:\n\(directory)")
+                return
+            }
         }
         let plan = Self.plan(
             for: project,
@@ -184,12 +186,15 @@ final class AppState {
                 try AppleScriptRunner.run(TerminalWindows.chromeScript(urls: project.urls))
             }
         } catch {
-            showAlert("Could not open \(project.name): \(error)")
+            showAlert("Could not open \(name): \(error)")
         }
     }
 
+    var canOpenCurrentSpace: Bool { currentProject.map { $0.openTerminals || $0.openChrome } ?? false }
+
     func saveTerminalWindows() {
-        guard var project = currentProject else { return }
+        guard let space = currentSpace else { return }
+        var project = configuration(for: space)
         let bounds = WindowLister.onScreenBounds(ownerName: WindowLister.iTermOwner)
         guard !bounds.isEmpty else {
             overlay.show("No iTerm2 windows on this space", visibleFor: overlayDuration)
@@ -199,7 +204,8 @@ final class AppState {
         // because TerminalWindows.framesToOpen takes its suffix, so the
         // windows opened when some already exist are the frontmost ones.
         project.windows = bounds.reversed().map(TerminalWindow.init(rect:))
-        projects.update(project)
+        project.openTerminals = true
+        update(project)
         overlay.show("Saved \(bounds.count) window\(bounds.count == 1 ? "" : "s")", visibleFor: overlayDuration)
     }
 
@@ -230,7 +236,7 @@ final class AppState {
 
     func registerHotKey() {
         openHotKey?.unregister()
-        openHotKey = HotKey(combo: shortcuts.openProject) { [weak self] in self?.openProject() }
+        openHotKey = HotKey(combo: shortcuts.openProject) { [weak self] in self?.openSpaceSetup() }
         hotKeyRegistered = openHotKey != nil
     }
 

@@ -84,39 +84,35 @@ struct AppStateTests {
         #expect(overlay.shown == ["Desktop 1", "Desktop 1"])
     }
 
-    @Test func createProjectAssignsToSpace() {
-        let state = makeState(FakeProvider(Self.displays(["a"], current: "a")))
-        state.refresh(announce: false)
-        let project = state.createProject(named: "New", on: state.currentSpace!)
-        #expect(state.projects.project(forSpace: "a") == project)
-    }
-
-    @Test func assignMovesProjectBetweenSpaces() {
-        let state = makeState(FakeProvider(Self.displays(["a", "b"], current: "a")))
-        state.refresh(announce: false)
-        let project = state.createProject(named: "P", on: state.snapshot.spaces[0])
-        state.assign(project: project, to: state.snapshot.spaces[1])
-        #expect(state.projects.project(forSpace: "a") == nil)
-        #expect(state.projects.project(forSpace: "b")?.id == project.id)
-        state.assign(project: nil, to: state.snapshot.spaces[1])
-        #expect(state.projects.project(forSpace: "b") == nil)
-    }
-
-    @Test func planOpensMissingTerminalsAndChromeOnce() {
+    @Test func planHonoursFlags() {
         let a = TerminalWindow(left: 0, top: 0, right: 1, bottom: 1)
         let b = TerminalWindow(left: 1, top: 0, right: 2, bottom: 1)
-        let project = Project(name: "P", directory: "/tmp", windows: [a, b], urls: ["https://x.test"])
-        let plan = AppState.plan(for: project, existingTerminals: 1, existingChromeWindows: 0)
-        #expect(plan.terminals == [b])
-        #expect(plan.openChrome)
-        let again = AppState.plan(for: project, existingTerminals: 2, existingChromeWindows: 1)
-        #expect(again.terminals.isEmpty)
-        #expect(!again.openChrome)
+        var project = Project(name: "P", directory: "/tmp", windows: [a, b], urls: ["https://x.test"])
+        #expect(AppState.plan(for: project, existingTerminals: 0, existingChromeWindows: 0) == OpenProjectPlan(terminals: [], openChrome: false))
+        project.openTerminals = true
+        project.openChrome = true
+        #expect(AppState.plan(for: project, existingTerminals: 1, existingChromeWindows: 0) == OpenProjectPlan(terminals: [b], openChrome: true))
+        #expect(AppState.plan(for: project, existingTerminals: 2, existingChromeWindows: 1) == OpenProjectPlan(terminals: [], openChrome: false))
+        project.urls = []
+        #expect(!AppState.plan(for: project, existingTerminals: 0, existingChromeWindows: 0).openChrome)
     }
 
-    @Test func planSkipsChromeWithoutUrls() {
-        let project = Project(name: "P", directory: "/tmp")
-        #expect(!AppState.plan(for: project, existingTerminals: 0, existingChromeWindows: 0).openChrome)
+    @Test func configurationIsCreatedOnFirstUpdate() {
+        let state = makeState(FakeProvider(Self.displays(["a"], current: "a")))
+        state.refresh(announce: false)
+        let space = state.snapshot.spaces[0]
+        #expect(state.projects.projects.isEmpty)
+        var config = state.configuration(for: space)
+        #expect(config.spaceUUID == "a")
+        #expect(config.name == "")
+        config.name = "Website"
+        state.update(config)
+        #expect(state.projects.project(forSpace: "a")?.name == "Website")
+        #expect(state.displayName(for: space) == "Website")
+        config.name = ""
+        state.update(config)
+        #expect(state.displayName(for: space) == "Desktop 1")
+        #expect(state.projects.projects.count == 1)
     }
 
     @Test func refreshLoadsMissionControlShortcuts() {

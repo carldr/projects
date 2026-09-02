@@ -28,4 +28,38 @@ nonisolated struct Project: Codable, Equatable, Identifiable, Sendable {
     var spaceUUID: String? = nil
     var windows: [TerminalWindow] = []
     var urls: [String] = []
+    /// Whether "Open" recreates the saved iTerm2 windows.
+    var openTerminals = false
+    /// Whether "Open" opens a Chrome window with `urls`.
+    var openChrome = false
+
+    init(id: UUID = UUID(), name: String, directory: String, spaceUUID: String? = nil,
+         windows: [TerminalWindow] = [], urls: [String] = [],
+         openTerminals: Bool = false, openChrome: Bool = false) {
+        self.id = id
+        self.name = name
+        self.directory = directory
+        self.spaceUUID = spaceUUID
+        self.windows = windows
+        self.urls = urls
+        self.openTerminals = openTerminals
+        self.openChrome = openChrome
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, directory, spaceUUID, windows, urls, openTerminals, openChrome
+    }
+
+    /// Records written before the flags existed derive them from content.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        directory = try container.decode(String.self, forKey: .directory)
+        spaceUUID = try container.decodeIfPresent(String.self, forKey: .spaceUUID)
+        windows = try container.decodeIfPresent([TerminalWindow].self, forKey: .windows) ?? []
+        urls = try container.decodeIfPresent([String].self, forKey: .urls) ?? []
+        openTerminals = try container.decodeIfPresent(Bool.self, forKey: .openTerminals) ?? !windows.isEmpty
+        openChrome = try container.decodeIfPresent(Bool.self, forKey: .openChrome) ?? !urls.isEmpty
+    }
 }

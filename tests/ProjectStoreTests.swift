@@ -60,6 +60,28 @@ struct ProjectStoreTests {
         #expect(store.project(forSpace: nil) == nil)
     }
 
+    @Test func decodesRecordsWithoutFlagsDerivingThemFromContent() throws {
+        let json = """
+        [{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","name":"A","directory":"/a","spaceUUID":"s1",
+          "windows":[{"left":0,"top":0,"right":1,"bottom":1}],"urls":[]},
+         {"id":"6F9619FF-8B86-D011-B42D-00C04FC964FE","name":"B","directory":"","spaceUUID":"s2",
+          "windows":[],"urls":["https://b.test"]}]
+        """
+        let projects = try JSONDecoder().decode([Project].self, from: Data(json.utf8))
+        #expect(projects[0].openTerminals == true)
+        #expect(projects[0].openChrome == false)
+        #expect(projects[1].openTerminals == false)
+        #expect(projects[1].openChrome == true)
+    }
+
+    @Test func flagsRoundTrip() throws {
+        var project = Project(name: "A", directory: "/a")
+        project.openTerminals = true
+        project.openChrome = true
+        let data = try JSONEncoder().encode(project)
+        #expect(try JSONDecoder().decode(Project.self, from: data) == project)
+    }
+
     @Test func terminalWindowFromRectUsesEdges() {
         let window = TerminalWindow(rect: CGRect(x: 10, y: 20, width: 300, height: 200))
         #expect(window == TerminalWindow(left: 10, top: 20, right: 310, bottom: 220))

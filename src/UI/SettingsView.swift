@@ -7,7 +7,7 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
-            ProjectsTab(state: state).tabItem { Label("Projects", systemImage: "folder") }
+            SpacesTab(state: state).tabItem { Label("Spaces", systemImage: "rectangle.3.group") }
             ShortcutsTab(state: state).tabItem { Label("Shortcuts", systemImage: "keyboard") }
             GeneralTab(state: state).tabItem { Label("General", systemImage: "gear") }
         }
@@ -17,58 +17,48 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Projects
+// MARK: - Spaces
 
-private struct ProjectsTab: View {
+private struct SpacesTab: View {
     @Bindable var state: AppState
-    @State private var selection: UUID?
+    @State private var selection: String?   // space uuid
 
     var body: some View {
         HSplitView {
-            VStack(spacing: 0) {
-                List(state.projects.projects, selection: $selection) { project in
-                    Text(project.name).tag(project.id)
-                }
-                HStack {
-                    Button {
-                        let project = state.createProject(named: "New project", on: nil)
-                        selection = project.id
-                    } label: { Image(systemName: "plus") }
-                    Button {
-                        if let selection { state.projects.remove(id: selection) }
-                        selection = nil
-                    } label: { Image(systemName: "minus") }
-                    .disabled(selection == nil)
-                    Spacer()
-                }
-                .padding(6)
+            List(state.snapshot.spaces, selection: $selection) { space in
+                Text("\(space.number) \(state.displayName(for: space))").tag(space.uuid)
             }
             .frame(minWidth: 160, maxWidth: 220)
 
-            if let project = state.projects.projects.first(where: { $0.id == selection }) {
-                ProjectEditor(state: state, project: project)
+            if let space = state.snapshot.spaces.first(where: { $0.uuid == selection }) {
+                SpaceEditor(state: state, space: space)
             } else {
-                Text("Select a project").frame(maxWidth: .infinity, maxHeight: .infinity)
+                Text("Select a space").frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .padding()
     }
 }
 
-private struct ProjectEditor: View {
+private struct SpaceEditor: View {
     private enum Field { case name, directory }
 
     @Bindable var state: AppState
-    let project: Project
+    let space: Space
     @State private var newURL = ""
     @State private var name = ""
     @State private var directory = ""
     @FocusState private var focused: Field?
 
+    /// The saved record, or an unsaved default until the space is first edited.
+    private var project: Project { state.configuration(for: space) }
+
+    private var isCurrentSpace: Bool { state.currentSpace?.uuid == space.uuid }
+
     private func edit(_ change: (inout Project) -> Void) {
         var copy = project
         change(&copy)
-        state.projects.update(copy)
+        state.update(copy)
     }
 
     private func seed() {
@@ -77,15 +67,16 @@ private struct ProjectEditor: View {
     }
 
     private func commitText() {
-        commitText(to: project.id)
+        commitText(to: space.uuid)
     }
 
-    private func commitText(to id: UUID) {
-        guard var target = state.projects.projects.first(where: { $0.id == id }) else { return }
-        if name != target.name || directory != target.directory {
-            target.name = name
-            target.directory = directory
-            state.projects.update(target)
+    private func commitText(to uuid: String) {
+        guard let target = state.snapshot.spaces.first(where: { $0.uuid == uuid }) else { return }
+        var configuration = state.configuration(for: target)
+        if name != configuration.name || directory != configuration.directory {
+            configuration.name = name
+            configuration.directory = directory
+            state.update(configuration)
         }
     }
 
@@ -95,66 +86,76 @@ private struct ProjectEditor: View {
                 .focused($focused, equals: .name)
                 .onSubmit(commitText)
 
-            HStack {
-                TextField("Directory", text: $directory)
-                    .focused($focused, equals: .directory)
-                    .onSubmit(commitText)
-                Button("Choose…") {
-                    let panel = NSOpenPanel()
-                    panel.canChooseDirectories = true
-                    panel.canChooseFiles = false
-                    panel.directoryURL = URL(fileURLWithPath: project.directory)
-                    if panel.runModal() == .OK, let url = panel.url {
-                        edit { $0.directory = url.path }
-                        directory = url.path
-                    }
-                }
-            }
+            Toggle("Open iTerm2 windows", isOn: Binding(
+                get: { project.openTerminals },
+                set: { on in edit { $0.openTerminals = on } }))
 
-            Picker("Space", selection: Binding(
-                get: { project.spaceUUID ?? "" },
-                set: { uuid in edit { $0.spaceUUID = uuid.isEmpty ? nil : uuid } }
-            )) {
-                Text("None").tag("")
-                ForEach(state.snapshot.spaces) { space in
-                    Text("\(space.number) \(state.displayName(for: space))").tag(space.uuid)
-                }
-            }
-
-            LabeledContent("Terminal windows") {
-                HStack {
-                    Text("\(project.windows.count) saved")
-                    Button("Forget windows") { edit { $0.windows = [] } }
-                        .disabled(project.windows.isEmpty)
-                }
-            }
-
-            Section("URLs") {
-                ForEach(Array(project.urls.enumerated()), id: \.offset) { index, url in
+            if project.openTerminals {
+                Section("iTerm2") {
                     HStack {
-                        Text(url).lineLimit(1).truncationMode(.middle)
-                        Spacer()
-                        Button { edit { $0.urls.swapAt(index, index - 1) } } label: { Image(systemName: "chevron.up") }
-                            .buttonStyle(.borderless)
-                            .disabled(index == 0)
-                        Button { edit { $0.urls.swapAt(index, index + 1) } } label: { Image(systemName: "chevron.down") }
-                            .buttonStyle(.borderless)
-                            .disabled(index == project.urls.count - 1)
-                        Button { edit { $0.urls.remove(at: index) } } label: { Image(systemName: "minus.circle") }
-                            .buttonStyle(.borderless)
+                        TextField("Directory", text: $directory)
+                            .focused($focused, equals: .directory)
+                            .onSubmit(commitText)
+                        Button("Choose…") {
+                            let panel = NSOpenPanel()
+                            panel.canChooseDirectories = true
+                            panel.canChooseFiles = false
+                            panel.directoryURL = URL(fileURLWithPath: directory.isEmpty ? NSHomeDirectory() : directory)
+                            if panel.runModal() == .OK, let url = panel.url {
+                                directory = url.path
+                                edit { $0.directory = url.path }
+                            }
+                        }
+                    }
+
+                    LabeledContent("Saved windows") {
+                        HStack {
+                            Text("\(project.windows.count)")
+                            Button("Save current windows") { state.saveTerminalWindows() }
+                                .disabled(!isCurrentSpace)
+                            Button("Forget") { edit { $0.windows = [] } }
+                                .disabled(project.windows.isEmpty)
+                        }
+                    }
+                    if !isCurrentSpace {
+                        Text("Switch to this space to save its windows.")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                HStack {
-                    TextField("https://…", text: $newURL)
-                        .onSubmit(addURL)
-                    Button("Add", action: addURL)
-                        .disabled(!Self.isValidURL(newURL))
+            }
+
+            Toggle("Open Chrome window", isOn: Binding(
+                get: { project.openChrome },
+                set: { on in edit { $0.openChrome = on } }))
+
+            if project.openChrome {
+                Section("URLs") {
+                    ForEach(Array(project.urls.enumerated()), id: \.offset) { index, url in
+                        HStack {
+                            Text(url).lineLimit(1).truncationMode(.middle)
+                            Spacer()
+                            Button { edit { $0.urls.swapAt(index, index - 1) } } label: { Image(systemName: "chevron.up") }
+                                .buttonStyle(.borderless)
+                                .disabled(index == 0)
+                            Button { edit { $0.urls.swapAt(index, index + 1) } } label: { Image(systemName: "chevron.down") }
+                                .buttonStyle(.borderless)
+                                .disabled(index == project.urls.count - 1)
+                            Button { edit { $0.urls.remove(at: index) } } label: { Image(systemName: "minus.circle") }
+                                .buttonStyle(.borderless)
+                        }
+                    }
+                    HStack {
+                        TextField("https://…", text: $newURL)
+                            .onSubmit(addURL)
+                        Button("Add", action: addURL)
+                            .disabled(!Self.isValidURL(newURL))
+                    }
                 }
             }
         }
         .formStyle(.grouped)
         .onAppear(perform: seed)
-        .onChange(of: project.id) { old, _ in commitText(to: old); seed() }
+        .onChange(of: space.uuid) { old, _ in commitText(to: old); seed() }
         .onChange(of: focused) { old, new in
             if old == .name || old == .directory, new != old { commitText() }
         }

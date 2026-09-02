@@ -22,30 +22,10 @@ struct MenuBarView: View {
 
             Divider()
 
-            Button("Open project") { state.openProject() }
-                .disabled(state.currentProject == nil)
+            Button("Open space setup") { state.openSpaceSetup() }
+                .disabled(!state.canOpenCurrentSpace)
             Button("Save terminal windows") { state.saveTerminalWindows() }
-                .disabled(state.currentProject == nil)
-
-            Menu("Assign this space to") {
-                ForEach(state.projects.projects) { project in
-                    Toggle(isOn: Binding(
-                        get: { project.id == state.currentProject?.id },
-                        set: { on in
-                            guard let space = state.currentSpace else { return }
-                            state.assign(project: on ? project : nil, to: space)
-                        }
-                    )) {
-                        Text(project.name)
-                    }
-                }
-                if !state.projects.projects.isEmpty { Divider() }
-                Button("New project…") {
-                    state.createProject(named: "New project", on: state.currentSpace)
-                    showSettings()
-                }
-            }
-            .disabled(state.currentSpace == nil)
+                .disabled(state.currentSpace == nil)
 
             Divider()
 
