@@ -1,0 +1,30 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "projects-spaces",
+  "title": "Projects Spaces",
+  "description": "Switch to a named macOS Space managed by Projects.app",
+  "icon": "command-icon.png",
+  "author": "carldr",
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "switch-space",
+      "title": "Switch Space",
+      "description": "List named Spaces and switch to one",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.83.0",
+    "@raycast/utils": "^1.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "test": "node --test --experimental-strip-types tests/*.test.ts"
+  }
+}

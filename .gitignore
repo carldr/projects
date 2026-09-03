@@ -27,3 +27,6 @@ Package.resolved
 # Superpowers working documents (specs, plans, SDD workspace)
 docs/superpowers/
 .superpowers/
+
+# Raycast extension
+raycast/node_modules/
