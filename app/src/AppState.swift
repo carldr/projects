@@ -235,6 +235,21 @@ final class AppState {
     update(project)
   }
 
+  // MARK: Scripting
+
+  /// Every desktop Space, for the AppleScript interface. Unfiltered: clients decide
+  /// what to show.
+  func scriptableSpaces() -> [ScriptableSpace] {
+    snapshot.spaces.map { space in
+      ScriptableSpace(
+        id: space.uuid,
+        name: project(for: space)?.name ?? "",
+        number: space.number,
+        current: space.uuid == snapshot.currentUUID,
+        switchable: shortcut(for: space) != nil)
+    }
+  }
+
   // MARK: Settings values
 
   // @Observable does not track `overlayDuration` or `launchAtLogin`: both
