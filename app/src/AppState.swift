@@ -283,7 +283,17 @@ final class AppState {
     while ContinuousClock.now < deadline {
       refresh(announce: false)
       if snapshot.currentUUID == id { return }
-      try? await Task.sleep(for: .milliseconds(50))
+      // A cancelled sleep throws immediately rather than suspending, so
+      // `try?` alone would spin the loop for the rest of the budget,
+      // calling refresh() — a SkyLight call plus a cross-process
+      // preferences read — on every turn with no delay. Treat cancellation
+      // as abandoning the wait: the caller's post-wait guard still catches
+      // a Space that never arrived.
+      do {
+        try await Task.sleep(for: .milliseconds(50))
+      } catch {
+        return
+      }
     }
   }
 
