@@ -17,12 +17,23 @@ export async function fetchSpaces(): Promise<Space[]> {
   return parseSpaces(await jxa('JSON.stringify(Application("Projects").listSpaces())'));
 }
 
+/**
+ * JXA source that calls the named `Projects` command with a single Space id.
+ * `id` comes from `spaceUUID` in a JSON file a user can edit by hand, so it is
+ * untrusted; `JSON.stringify` escapes it into a JS string literal so it cannot
+ * terminate that literal early. Exported so the escaping can be tested directly,
+ * without going through `execFile`.
+ */
+export function commandSource(method: string, id: string): string {
+  return `Application("Projects").${method}(${JSON.stringify(id)})`;
+}
+
 export async function switchToSpace(id: string): Promise<void> {
-  await jxa(`Application("Projects").switchToSpace(${JSON.stringify(id)})`);
+  await jxa(commandSource("switchToSpace", id));
 }
 
 export async function openSpaceSetup(id: string): Promise<void> {
-  await jxa(`Application("Projects").openSpaceSetupFor(${JSON.stringify(id)})`);
+  await jxa(commandSource("openSpaceSetupFor", id));
 }
 
 /** Turns osascript's failures into something a Raycast toast can usefully say. */
