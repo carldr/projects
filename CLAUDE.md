@@ -29,7 +29,7 @@ permissions involved; read it before changing behaviour.
 
 ## Architecture
 
-`AppState` (`src/AppState.swift`) is the only stateful object. It is `@MainActor @Observable`, owns `ProjectStore`
+`AppState` (`app/src/AppState.swift`) is the only stateful object. It is `@MainActor @Observable`, owns `ProjectStore`
 and `ShortcutStore`, and every view reads it through `@Bindable`. Everything it talks to the system with is behind a
 seam it takes in `init`: `SpaceProviding`, `OverlayShowing`, the Mission Control shortcut reader closure, and
 `UserDefaults`. Tests substitute fakes for all four; keep new system access behind the same pattern rather than
@@ -68,5 +68,5 @@ those flags — keep it working when adding fields.
   `@Observable` does not track them; views hold their own `@State` and seed it in `onAppear`.
 - `OverlayPanel` sets `hosting.sizingOptions = [.intrinsicContentSize]` only. Adding `.minSize`/`.maxSize` makes the
   hosting view and the hand-set panel size fight until AppKit throws on too many constraint passes.
-- Signing: `Config.xcconfig` `#include?`s a git-ignored `Local.xcconfig` for `DEVELOPMENT_TEAM`. Never commit a team
-  ID to the project file.
+- Signing: `app/Config.xcconfig` `#include?`s a git-ignored `app/Local.xcconfig` for `DEVELOPMENT_TEAM`. Never commit a
+  team ID to the project file.
