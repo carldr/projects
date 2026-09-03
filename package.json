@@ -5,10 +5,10 @@
   "workspaces": ["raycast"],
   "scripts": {
     "test": "node scripts/test.mjs",
-    "test:app": "xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
-    "test:raycast": "npm test --prefix raycast",
-    "typecheck": "npx --prefix raycast --no-install tsc --noEmit --project raycast",
-    "build:app": "xcodebuild build -quiet -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
-    "dev:raycast": "npm run dev --prefix raycast"
+    "app:test": "xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
+    "app:build": "xcodebuild build -quiet -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
+    "raycast:test": "npm test --prefix raycast",
+    "raycast:typecheck": "npx --prefix raycast --no-install tsc --noEmit --project raycast",
+    "raycast:dev": "npm run dev --prefix raycast"
   }
 }

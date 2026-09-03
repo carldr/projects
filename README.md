@@ -31,15 +31,15 @@ Sources are in `app/src/`, tests in `app/tests/`. The Raycast extension is in `r
 Run the app's tests with Product > Test in Xcode. The root `package.json` runs the app and the extension from the command line. The root `package.json` declares no dependencies, so the root needs no `npm install`.
 
 ```sh
-npm test              # both suites: the app, then the extension
-npm run test:app      # the app's suite alone
-npm run test:raycast  # the extension's suite alone
-npm run typecheck     # TypeScript over the extension
-npm run build:app     # build the app without running its tests
-npm run dev:raycast   # install the extension into Raycast and watch for changes
+npm test                   # both suites
+npm run app:test           # the app's suite alone
+npm run app:build          # build the app without running its tests
+npm run raycast:test       # the extension's suite alone
+npm run raycast:typecheck  # TypeScript over the extension
+npm run raycast:dev        # install the extension into Raycast and rebuild on every save
 ```
 
-`npm test` stops at the first suite that fails, so a failure in the app's suite means the extension's suite has not run.
+`npm test` runs `scripts/test.mjs`, a harness over both suites, rather than either suite's own runner. `scripts/test.mjs` prints one line per test and nothing else, runs both suites even when the first suite fails, and repeats every failure at the end with its reason and the file and line it came from.
 
 ## Permissions
 
@@ -98,17 +98,17 @@ change.
 npm install
 ```
 
-`npm run dev:raycast` puts the Switch Project command into Raycast and rebuilds that command on every save.
+`npm run raycast:dev` puts the Switch Project command into Raycast and rebuilds that command on every save.
 
 ```sh
-npm run dev:raycast
+npm run raycast:dev
 ```
 
-Raycast loads the rebuilt command the next time you open Switch Project. Leave `npm run dev:raycast` running while you
-work on the extension, and stop `npm run dev:raycast` with Control+C when you have finished.
+Raycast loads the rebuilt command the next time you open Switch Project. Leave `npm run raycast:dev` running while you
+work on the extension, and stop `npm run raycast:dev` with Control+C when you have finished.
 
-The command appears in Raycast as "Switch Project" while `npm run dev:raycast` runs, and remains installed after
-`npm run dev:raycast` stops. To reach the command by typing `p`, open Raycast's settings, find the command under
+The command appears in Raycast as "Switch Project" while `npm run raycast:dev` runs, and remains installed after
+`npm run raycast:dev` stops. To reach the command by typing `p`, open Raycast's settings, find the command under
 Extensions, and set an alias. The alias is stored in your Raycast settings and is not part of the extension.
 
 ## Where data is stored

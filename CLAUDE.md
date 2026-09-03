@@ -8,15 +8,28 @@ README.md documents these scripts for a person setting the repository up. `rayca
 package, so `npm install` at the root installs the extension's dependencies.
 
 ```sh
-npm test              # both suites: the Swift app, then the Raycast extension
-npm run test:app      # the Swift suite alone
-npm run test:raycast  # the extension's Node suite alone
-npm run typecheck     # tsc over the extension
-npm run build:app     # build the app without running tests
-npm run dev:raycast   # install the extension into Raycast, then rebuild on every save
+npm test                   # both suites
+npm run app:test           # the Swift suite alone
+npm run app:build          # build the app without running tests
+npm run raycast:test       # the extension's Node suite alone
+npm run raycast:typecheck  # tsc over the extension
+npm run raycast:dev        # install the extension into Raycast, then rebuild on every save
 ```
 
-`npm test` stops at the first suite that fails, so a Swift failure means the extension suite has not run.
+`npm test` runs `scripts/test.mjs`, a harness over both suites rather than either suite's own runner.
+`scripts/test.mjs` prints one line per test and nothing else. Both suites
+run even when the first one fails, and every failure is repeated at the end with its reason and its file and line.
+`app:test` and `raycast:test` run `xcodebuild` and `node --test` unfiltered, for when `scripts/test.mjs` hides
+something you need.
+
+**`npm test` covers both suites, so `npm test` is the command to run before calling any change complete.** Run
+`npm test`, read what it prints, and treat a change as unfinished until every line is a tick. A passing `app:test`
+alone says nothing about the extension, and a passing `raycast:test` alone says nothing about the app.
+
+`scripts/test.mjs` parses each suite's output separately, because swift-testing prints an issue line before the
+failure line for the same test, while `node --test` emits TAP once its output is a pipe rather than a terminal. A
+suite that exits non-zero without any parsed failure has its whole log printed, so a build error or a crash partway
+through is never reduced to silence. A change to either suite's reporter is a change `scripts/test.mjs` has to follow.
 
 The scripts pass no flags of their own. Call `xcodebuild` directly to add one, such as `-only-testing` for a single
 suite:
