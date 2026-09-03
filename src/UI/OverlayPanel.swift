@@ -7,8 +7,8 @@ protocol OverlayShowing {
     func show(_ text: String, visibleFor duration: TimeInterval)
 }
 
-/// A click-through panel above every window and on every space that shows a
-/// line of text, then fades over 0.5 s.
+/// A click-through panel above every window that shows a line of text, then
+/// fades over 0.5 s.
 @MainActor
 final class OverlayPanel: OverlayShowing {
     private let panel: NSPanel
@@ -24,7 +24,11 @@ final class OverlayPanel: OverlayShowing {
         panel.hasShadow = false
         panel.ignoresMouseEvents = true
         panel.hidesOnDeactivate = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        // Deliberately not .canJoinAllSpaces: a panel on every space follows
+        // the user through a switch, so the space just left is still named on
+        // screen until activeSpaceDidChangeNotification arrives. Left on one
+        // space, a fading overlay fades out where it was shown, unseen.
+        panel.collectionBehavior = [.ignoresCycle, .fullScreenAuxiliary]
         hosting = NSHostingView(rootView: OverlayView(text: ""))
         // The panel is sized by hand below. With .minSize/.maxSize on, the
         // hosting view also drives the window's size from its content, and
@@ -37,6 +41,11 @@ final class OverlayPanel: OverlayShowing {
 
     func show(_ text: String, visibleFor duration: TimeInterval) {
         hideTask?.cancel()
+        // Ordered out first so the panel has no space assignment: without
+        // .canJoinAllSpaces a visible panel stays on the space it was last
+        // shown on, and ordering it front again there would pull the user
+        // back to it. An ordered-out panel lands on the active space.
+        panel.orderOut(nil)
         hosting.rootView = OverlayView(text: text)
         let size = hosting.intrinsicContentSize
         hosting.frame = NSRect(origin: .zero, size: size)
