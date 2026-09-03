@@ -1,4 +1,15 @@
-import { Action, ActionPanel, Color, Icon, List, Toast, closeMainWindow, open, showToast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Color,
+  Icon,
+  List,
+  PopToRootType,
+  Toast,
+  closeMainWindow,
+  open,
+  showToast,
+} from "@raycast/api";
 import { showFailureToast, usePromise } from "@raycast/utils";
 import { describeError, fetchSpaces, openSpaceSetup, switchToSpace } from "./projects.ts";
 import { namedSpaces, sections, type Space } from "./spaces.ts";
@@ -95,7 +106,11 @@ function accessories(space: Space): List.Item.Accessory[] {
 async function act(action: (id: string) => Promise<void>, space: Space) {
   try {
     await action(space.id);
-    await closeMainWindow();
+    // Force an immediate pop to root, rather than relying on the user's "Pop to Root
+    // Search" preference (closeMainWindow's default): the view must actually unmount
+    // so that the next launch remounts it and usePromise refetches, instead of
+    // reopening the same mounted view with its first fetch's now-stale `current` flag.
+    await closeMainWindow({ popToRootType: PopToRootType.Immediate });
   } catch (error) {
     await showToast({ style: Toast.Style.Failure, title: `Could not open ${space.name}`, message: describeError(error) });
   }
