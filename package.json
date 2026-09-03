@@ -1,0 +1,14 @@
+{
+  "name": "projects",
+  "private": true,
+  "description": "Task runner for the whole repository: the macOS app in app/ and the Raycast extension in raycast/",
+  "workspaces": ["raycast"],
+  "scripts": {
+    "test": "npm run test:app && npm run test:raycast",
+    "test:app": "xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
+    "test:raycast": "npm test --prefix raycast",
+    "typecheck": "npx --prefix raycast --no-install tsc --noEmit --project raycast",
+    "build:app": "xcodebuild build -quiet -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
+    "dev:raycast": "npm run dev --prefix raycast"
+  }
+}

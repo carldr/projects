@@ -28,5 +28,5 @@ Package.resolved
 docs/superpowers/
 .superpowers/
 
-# Raycast extension
-raycast/node_modules/
+# npm
+node_modules/
