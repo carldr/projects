@@ -250,6 +250,19 @@ final class AppState {
     }
   }
 
+  /// Switches without alerting. Throws so the caller — an osascript process — gets
+  /// the failure back instead of a modal it cannot dismiss.
+  func scriptedSwitch(toSpaceID id: String) throws {
+    guard let space = snapshot.spaces.first(where: { $0.uuid == id }) else {
+      throw ScriptingError.unknownSpace(id)
+    }
+    guard let combo = shortcut(for: space) else {
+      throw ScriptingError.noShortcut(space.number)
+    }
+    guard SpaceSwitcher.isTrusted else { throw ScriptingError.notTrusted }
+    SpaceSwitcher.post(combo)
+  }
+
   // MARK: Settings values
 
   // @Observable does not track `overlayDuration` or `launchAtLogin`: both

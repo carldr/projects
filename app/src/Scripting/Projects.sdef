@@ -18,5 +18,10 @@
       </result>
     </command>
 
+    <command name="switch to space" code="PrjsSwtS" description="Switch to the Space with this id.">
+      <cocoa class="SwitchToSpaceCommand"/>
+      <direct-parameter type="text" description="The Space id, from list spaces."/>
+    </command>
+
   </suite>
 </dictionary>

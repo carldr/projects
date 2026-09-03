@@ -19,3 +19,26 @@ final class ListSpacesCommand: NSScriptCommand {
     }
   }
 }
+
+/// Switches to the Space named by the direct parameter.
+@objc(SwitchToSpaceCommand)
+final class SwitchToSpaceCommand: NSScriptCommand {
+  override func performDefaultImplementation() -> Any? {
+    guard let id = directParameter as? String else {
+      scriptErrorNumber = errAEParamMissed
+      scriptErrorString = "Expected a space id."
+      return nil
+    }
+    return MainActor.assumeIsolated {
+      guard let state = AppDelegate.shared?.state else { return nil }
+      state.refresh(announce: false)
+      do {
+        try state.scriptedSwitch(toSpaceID: id)
+      } catch {
+        scriptErrorNumber = errAEEventFailed
+        scriptErrorString = String(describing: error)
+      }
+      return nil
+    }
+  }
+}

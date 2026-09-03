@@ -47,4 +47,14 @@ struct ScriptableSpaceTests {
       shortcuts: [1: KeyCombo(keyCode: 18, control: true)])
     #expect(state.scriptableSpaces().map(\.switchable) == [true, false])
   }
+
+  @Test func scriptedSwitchRejectsAnUnknownSpaceID() {
+    let state = makeState(uuids: ["a"], current: "a", shortcuts: [1: KeyCombo(keyCode: 18)])
+    #expect(throws: ScriptingError.self) { try state.scriptedSwitch(toSpaceID: "nope") }
+  }
+
+  @Test func scriptedSwitchRejectsASpaceWithNoShortcut() {
+    let state = makeState(uuids: ["a"], current: "a")
+    #expect(throws: ScriptingError.self) { try state.scriptedSwitch(toSpaceID: "a") }
+  }
 }
