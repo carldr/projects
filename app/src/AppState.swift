@@ -263,6 +263,30 @@ final class AppState {
     SpaceSwitcher.post(combo)
   }
 
+  /// Switches, waits for the change to land, then opens the Space's setup. Waiting
+  /// matters: `openSpaceSetup()` acts on `currentSpace`, so running it during the
+  /// switch animation opens windows on the Space being left.
+  func scriptedOpenSetup(forSpaceID id: String) async throws {
+    if snapshot.currentUUID != id {
+      try scriptedSwitch(toSpaceID: id)
+      await waitForSpace(id, timeout: .seconds(3))
+    }
+    refresh(announce: false)
+    guard snapshot.currentUUID == id else { throw ScriptingError.unknownSpace(id) }
+    openSpaceSetup()
+  }
+
+  /// Polls until the active Space is `id`, or the timeout expires. Polling rather
+  /// than observing: the notification may already have fired before we start.
+  private func waitForSpace(_ id: String, timeout: Duration) async {
+    let deadline = ContinuousClock.now.advanced(by: timeout)
+    while ContinuousClock.now < deadline {
+      refresh(announce: false)
+      if snapshot.currentUUID == id { return }
+      try? await Task.sleep(for: .milliseconds(50))
+    }
+  }
+
   // MARK: Settings values
 
   // @Observable does not track `overlayDuration` or `launchAtLogin`: both

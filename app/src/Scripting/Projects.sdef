@@ -23,5 +23,10 @@
       <direct-parameter type="text" description="The Space id, from list spaces."/>
     </command>
 
+    <command name="open space setup for" code="PrjsOpnS" description="Switch to a Space, then open its saved windows.">
+      <cocoa class="OpenSpaceSetupCommand"/>
+      <direct-parameter type="text" description="The Space id, from list spaces."/>
+    </command>
+
   </suite>
 </dictionary>

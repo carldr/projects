@@ -42,3 +42,31 @@ final class SwitchToSpaceCommand: NSScriptCommand {
     }
   }
 }
+
+/// Switches to the Space, then opens its saved iTerm2 and Chrome windows.
+@objc(OpenSpaceSetupCommand)
+final class OpenSpaceSetupCommand: NSScriptCommand {
+  override func performDefaultImplementation() -> Any? {
+    guard let id = directParameter as? String else {
+      scriptErrorNumber = errAEParamMissed
+      scriptErrorString = "Expected a space id."
+      return nil
+    }
+    suspendExecution()
+    Task { @MainActor in
+      guard let state = AppDelegate.shared?.state else {
+        self.resumeExecution(withResult: nil)
+        return
+      }
+      state.refresh(announce: false)
+      do {
+        try await state.scriptedOpenSetup(forSpaceID: id)
+      } catch {
+        self.scriptErrorNumber = errAEEventFailed
+        self.scriptErrorString = String(describing: error)
+      }
+      self.resumeExecution(withResult: nil)
+    }
+    return nil
+  }
+}
