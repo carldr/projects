@@ -15,3 +15,19 @@ test("explains the app not running", () => {
 test("passes other messages through", () => {
   assert.match(describeError(new Error("No space with id nope.")), /No space with id nope/);
 });
+
+test("does not misclassify a Space id containing -600 as 'not running'", () => {
+  const message = describeError(
+    new Error("execution error: Error: Error: No space with id bogus-600-id. (-10000)"),
+  );
+  assert.doesNotMatch(message, /not running/i);
+  assert.match(message, /bogus-600-id/);
+});
+
+test("does not misclassify a Space id containing -1743 as an Automation grant", () => {
+  const message = describeError(
+    new Error("execution error: Error: Error: No space with id bogus-1743-id. (-10000)"),
+  );
+  assert.doesNotMatch(message, /Automation/);
+  assert.match(message, /bogus-1743-id/);
+});

@@ -28,10 +28,15 @@ export async function openSpaceSetup(id: string): Promise<void> {
 /** Turns osascript's failures into something a Raycast toast can usefully say. */
 export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  if (message.includes("-1743")) {
+  // osascript appends the AppleEvent/OSStatus error code as a parenthesised integer
+  // at the end of the message. Match only that trailing position, not the code
+  // anywhere in the string — the app echoes ids verbatim into its own error text
+  // (e.g. "No space with id bogus-600-id."), and an id is not an error code.
+  const code = message.match(/\((-?\d+)\)\s*$/)?.[1];
+  if (code === "-1743") {
     return "Raycast is not allowed to control Projects. Grant it under System Settings > Privacy & Security > Automation.";
   }
-  if (message.includes("-600") || message.includes("isn't running")) {
+  if (code === "-600") {
     return "Projects is not running. Launch it and try again.";
   }
   return message.replace(/^execution error:\s*/, "").trim();
