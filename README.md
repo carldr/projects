@@ -18,16 +18,16 @@ Spaces are created in Mission Control (Control+Up, then the + at the top right).
 
 ## Building and first run
 
-Open `Projects.xcodeproj` and press Run. The menu bar item appears at once; the app has no Dock icon and no main window.
+Open `app/Projects.xcodeproj` and press Run. The menu bar item appears at once; the app has no Dock icon and no main window.
 
-The project file sets no signing team. Xcode signs the build to run locally, which is all the app needs. To sign with your own Apple Developer team instead, create a file named `Local.xcconfig` next to `Projects.xcodeproj` containing `DEVELOPMENT_TEAM = <your team ID>`; the file is git-ignored.
+The project file sets no signing team. Xcode signs the build to run locally, which is all the app needs. To sign with your own Apple Developer team instead, create a file named `Local.xcconfig` next to `app/Projects.xcodeproj` containing `DEVELOPMENT_TEAM = <your team ID>`; the file is git-ignored.
 
 A Run build is enough to keep using the app. Archive only to install a copy outside Xcode: Product > Archive, Distribute App > Custom > Copy App, then move `Projects.app` to `/Applications`.
 
-Sources are in `src/`, tests in `tests/`. Run the tests with Product > Test in Xcode, or:
+Sources are in `app/src/`, tests in `app/tests/`. Run the tests with Product > Test in Xcode, or:
 
 ```sh
-xcodebuild test -project Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
+xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
 ```
 
 ## Permissions

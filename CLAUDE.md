@@ -6,19 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```sh
 # Build
-xcodebuild build -project Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
+xcodebuild build -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
 
 # All tests
-xcodebuild test -project Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
+xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
 
 # One suite, or one test
-xcodebuild test -project Projects.xcodeproj -scheme Projects -destination 'platform=macOS' \
+xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS' \
   -only-testing:ProjectsTests/AppStateTests
-xcodebuild test -project Projects.xcodeproj -scheme Projects -destination 'platform=macOS' \
+xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS' \
   -only-testing:ProjectsTests/AppStateTests/refreshLoadsSnapshotAndTitle
 ```
 
-There is no linter. `src/` and `tests/` are `PBXFileSystemSynchronizedRootGroup`s, so a new file is picked up by
+There is no linter. `app/src/` and `app/tests/` are `PBXFileSystemSynchronizedRootGroup`s, so a new file is picked up by
 path — never hand-edit `project.pbxproj` to add one.
 
 ## What the app is
