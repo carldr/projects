@@ -226,7 +226,6 @@ final class AppState {
         // windows opened when some already exist are the frontmost ones.
         project.windows = bounds.reversed().map(TerminalWindow.init(rect:))
         update(project)
-        overlay.show("Saved \(bounds.count) window\(bounds.count == 1 ? "" : "s")", visibleFor: overlayDuration)
     }
 
     // MARK: Settings values
