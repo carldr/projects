@@ -8,9 +8,9 @@
   "license": "MIT",
   "commands": [
     {
-      "name": "switch-space",
-      "title": "Switch Space",
-      "description": "List named Spaces and switch to one",
+      "name": "switch-project",
+      "title": "Switch Project",
+      "description": "List your projects and switch to one",
       "mode": "view"
     }
   ],

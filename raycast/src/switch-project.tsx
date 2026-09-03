@@ -37,13 +37,13 @@ export default function Command() {
   const { switchable, unswitchable } = sections(namedSpaces(data ?? []));
 
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Filter spaces">
+    <List isLoading={isLoading} searchBarPlaceholder="Filter projects">
       <List.EmptyView
         icon={Icon.Window}
-        title="No named spaces"
+        title="No projects"
         description="Name a space in Projects' Settings, then try again."
       />
-      <List.Section title="Spaces">
+      <List.Section title="Projects">
         {switchable.map((space) => (
           <List.Item
             key={space.id}
@@ -51,7 +51,7 @@ export default function Command() {
             accessories={accessories(space)}
             actions={
               <ActionPanel>
-                <Action title="Switch to Space" icon={Icon.ArrowRight} onAction={() => act(switchToSpace, space)} />
+                <Action title="Switch to Project" icon={Icon.ArrowRight} onAction={() => act(switchToSpace, space)} />
                 <Action title="Open Project" icon={Icon.AppWindowGrid2x2} onAction={() => act(openSpaceSetup, space)} />
               </ActionPanel>
             }
