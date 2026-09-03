@@ -47,7 +47,6 @@ export default function Command() {
         {switchable.map((space) => (
           <List.Item
             key={space.id}
-            icon={icon(space)}
             title={space.name}
             accessories={accessories(space)}
             actions={
@@ -63,7 +62,6 @@ export default function Command() {
         {unswitchable.map((space) => (
           <List.Item
             key={space.id}
-            icon={icon(space)}
             title={space.name}
             accessories={accessories(space)}
             actions={
@@ -79,18 +77,16 @@ export default function Command() {
   );
 }
 
-/** The current Space, switchable or not, is marked the same way everywhere it appears. */
-function icon(space: Space) {
-  return space.current ? Icon.CheckCircle : Icon.Circle;
-}
-
 /**
  * The Space number and, when current, the "current" tag apply to every row alike.
  * Unswitchable rows get one more accessory on top: the warning that explains why
  * there is no switch action here.
  */
 function accessories(space: Space): List.Item.Accessory[] {
-  const marks: List.Item.Accessory[] = [{ text: `${space.number}` }];
+  // "Space 4" rather than a bare "4": Raycast renders plain accessory text in
+  // the same grey pill it uses for key hints, leaving no way to tell a lone
+  // digit from a key hint.
+  const marks: List.Item.Accessory[] = [{ text: `Space ${space.number}` }];
   if (space.current) {
     marks.push({ tag: "current" });
   }

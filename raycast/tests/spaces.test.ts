@@ -43,3 +43,25 @@ test("an empty payload yields empty sections", () => {
   const s = sections(namedSpaces(parseSpaces("[]")));
   assert.deepEqual(s, { switchable: [], unswitchable: [] });
 });
+
+test("sorts the current Space to the end, even when it would otherwise sort earlier", () => {
+  const json = JSON.stringify([
+    { id: "a", name: "Website", number: 7, current: false, switchable: true },
+    { id: "d", name: "Client portal", number: 2, current: true, switchable: true },
+  ]);
+  assert.deepEqual(
+    namedSpaces(parseSpaces(json)).map((s) => s.name),
+    ["Website", "Client portal"],
+  );
+});
+
+test("keeps alphabetical order when no Space is current", () => {
+  const json = JSON.stringify([
+    { id: "a", name: "Website", number: 7, current: false, switchable: true },
+    { id: "d", name: "Client portal", number: 2, current: false, switchable: true },
+  ]);
+  assert.deepEqual(
+    namedSpaces(parseSpaces(json)).map((s) => s.name),
+    ["Client portal", "Website"],
+  );
+});
