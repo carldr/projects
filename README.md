@@ -26,11 +26,20 @@ The project file sets no signing team. Xcode signs the build to run locally, whi
 
 A Run build is enough to keep using the app. Archive only to install a copy outside Xcode: Product > Archive, Distribute App > Custom > Copy App, then move `Projects.app` to `/Applications`.
 
-Sources are in `app/src/`, tests in `app/tests/`. Run the tests with Product > Test in Xcode, or:
+Sources are in `app/src/`, tests in `app/tests/`. The Raycast extension is in `raycast/`, with its own sources and tests.
+
+Run the app's tests with Product > Test in Xcode. The root `package.json` runs the app and the extension from the command line. The root `package.json` declares no dependencies, so the root needs no `npm install`.
 
 ```sh
-xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
+npm test              # both suites: the app, then the extension
+npm run test:app      # the app's suite alone
+npm run test:raycast  # the extension's suite alone
+npm run typecheck     # TypeScript over the extension
+npm run build:app     # build the app without running its tests
+npm run dev:raycast   # install the extension into Raycast and watch for changes
 ```
+
+`npm test` stops at the first suite that fails, so a failure in the app's suite means the extension's suite has not run.
 
 ## Permissions
 
@@ -79,17 +88,28 @@ Projects for the list, macOS raises an Automation prompt asking whether Raycast 
 Automation permission in System Settings > Privacy & Security > Automation. Rebuilding Projects from Xcode can revoke
 the permission. Grant it again in System Settings > Privacy & Security > Automation.
 
-The extension is not in the Raycast Store. Install the extension from source:
+The extension is not in the Raycast Store, so you install the extension from source. Both commands below run from the
+root of the repository.
+
+`npm install` fetches the extension's dependencies. Run `npm install` once, and again whenever those dependencies
+change.
 
 ```sh
-cd raycast
 npm install
-npm run dev
 ```
 
-The command appears in Raycast as "Switch Project" while `npm run dev` runs, and remains installed after `npm run dev`
-stops. To reach the command by typing `p`, open Raycast's settings, find the command under Extensions, and set an
-alias. The alias is stored in your Raycast settings and is not part of the extension.
+`npm run dev:raycast` puts the Switch Project command into Raycast and rebuilds that command on every save.
+
+```sh
+npm run dev:raycast
+```
+
+Raycast loads the rebuilt command the next time you open Switch Project. Leave `npm run dev:raycast` running while you
+work on the extension, and stop `npm run dev:raycast` with Control+C when you have finished.
+
+The command appears in Raycast as "Switch Project" while `npm run dev:raycast` runs, and remains installed after
+`npm run dev:raycast` stops. To reach the command by typing `p`, open Raycast's settings, find the command under
+Extensions, and set an alias. The alias is stored in your Raycast settings and is not part of the extension.
 
 ## Where data is stored
 
