@@ -1,5 +1,5 @@
 import { Action, ActionPanel, Color, Icon, List, Toast, closeMainWindow, open, showToast } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
+import { showFailureToast, usePromise } from "@raycast/utils";
 import { describeError, fetchSpaces, openSpaceSetup, switchToSpace } from "./projects.ts";
 import { namedSpaces, sections, type Space } from "./spaces.ts";
 
@@ -7,11 +7,21 @@ const MISSION_CONTROL_SETTINGS =
   "x-apple.systempreferences:com.apple.Keyboard-Settings.extension?Shortcuts";
 
 export default function Command() {
-  const { data, isLoading, error } = usePromise(fetchSpaces);
-
-  if (error) {
-    showToast({ style: Toast.Style.Failure, title: "Could not reach Projects", message: describeError(error) });
-  }
+  const { data, isLoading, revalidate } = usePromise(fetchSpaces, [], {
+    onError: (error) => {
+      showFailureToast(error, {
+        title: "Could not reach Projects",
+        message: describeError(error),
+        primaryAction: {
+          title: "Retry",
+          onAction: (toast) => {
+            toast.hide();
+            revalidate();
+          },
+        },
+      });
+    },
+  });
 
   const { switchable, unswitchable } = sections(namedSpaces(data ?? []));
 
@@ -26,7 +36,7 @@ export default function Command() {
         {switchable.map((space) => (
           <List.Item
             key={space.id}
-            icon={space.current ? Icon.CheckCircle : Icon.Circle}
+            icon={icon(space)}
             title={space.name}
             accessories={accessories(space)}
             actions={
@@ -42,9 +52,9 @@ export default function Command() {
         {unswitchable.map((space) => (
           <List.Item
             key={space.id}
-            icon={{ source: Icon.ExclamationMark, tintColor: Color.Orange }}
+            icon={icon(space)}
             title={space.name}
-            accessories={[{ text: `${space.number}` }]}
+            accessories={accessories(space)}
             actions={
               <ActionPanel>
                 {/* A dead Enter reads as a broken extension, so offer the fix instead. */}
@@ -58,10 +68,28 @@ export default function Command() {
   );
 }
 
-function accessories(space: Space) {
-  return space.current
-    ? [{ text: `${space.number}` }, { tag: "current" }]
-    : [{ text: `${space.number}` }];
+/** The current Space, switchable or not, is marked the same way everywhere it appears. */
+function icon(space: Space) {
+  return space.current ? Icon.CheckCircle : Icon.Circle;
+}
+
+/**
+ * The Space number and, when current, the "current" tag apply to every row alike.
+ * Unswitchable rows get one more accessory on top: the warning that explains why
+ * there is no switch action here.
+ */
+function accessories(space: Space): List.Item.Accessory[] {
+  const marks: List.Item.Accessory[] = [{ text: `${space.number}` }];
+  if (space.current) {
+    marks.push({ tag: "current" });
+  }
+  if (!space.switchable) {
+    marks.push({
+      icon: { source: Icon.ExclamationMark, tintColor: Color.Orange },
+      tooltip: "No Mission Control shortcut",
+    });
+  }
+  return marks;
 }
 
 async function act(action: (id: string) => Promise<void>, space: Space) {
