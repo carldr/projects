@@ -39,5 +39,32 @@ export function describeError(error: unknown): string {
   if (code === "-600") {
     return "Projects is not running. Launch it and try again.";
   }
-  return message.replace(/^execution error:\s*/, "").trim();
+  return explain(message);
+}
+
+/**
+ * Pulls the app's own message out of an `execFile` failure. `execFile` rejects with
+ * `Command failed: <the whole osascript command line>\n<stderr>`, so the useful text —
+ * the `execution error:` line the app prints to stderr — is never at the start of the
+ * string; the old `^execution error:` match never fired. Find that line instead, then
+ * strip its `execution error:` prefix, any duplicated `Error: Error:` noise, and the
+ * trailing `(-NNNN)` code (already used for classification above, and meaningless to a
+ * reader). If no such line exists, fall back to something short — never the raw blob,
+ * which would put the command line itself, `osascript` and all, in a Raycast toast.
+ */
+function explain(message: string): string {
+  const line = message.split("\n").find((l) => l.includes("execution error:"));
+  if (line) {
+    const text = line
+      .replace(/^.*execution error:\s*/, "")
+      .replace(/^(?:Error:\s*)+/, "")
+      .replace(/\s*\(-?\d+\)\s*$/, "")
+      .trim();
+    return text || "Projects reported an unexpected error.";
+  }
+  // No `execution error:` line to pull out. If this is still the raw `execFile`
+  // blob, its first line is the command itself — never surface that. Otherwise the
+  // message is already short (e.g. a plain Error we constructed ourselves), so pass
+  // it through as-is.
+  return message.includes("Command failed:") ? "Projects reported an unexpected error." : message.trim();
 }

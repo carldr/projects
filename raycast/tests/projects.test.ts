@@ -31,3 +31,15 @@ test("does not misclassify a Space id containing -1743 as an Automation grant", 
   assert.doesNotMatch(message, /Automation/);
   assert.match(message, /bogus-1743-id/);
 });
+
+test("strips the command echo and error boilerplate from the fallback message", () => {
+  const message = describeError(
+    new Error(
+      'Command failed: /usr/bin/osascript -l JavaScript -e Application("Projects").switchToSpace("x")\nexecution error: Error: Error: No space with id x. (-10000)\n',
+    ),
+  );
+  assert.equal(message, "No space with id x.");
+  assert.doesNotMatch(message, /osascript/);
+  assert.doesNotMatch(message, /Command failed/);
+  assert.doesNotMatch(message, /\(-10000\)/);
+});
