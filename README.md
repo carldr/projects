@@ -6,6 +6,8 @@ You give each Space a name in the app. The menu bar item shows the number of the
 
 For each Space you can save the positions of your iTerm2 windows and reopen them later in a chosen directory, and open a Chrome window with a list of URLs.
 
+The repository also holds a Raycast extension, which lists your projects, filters them as you type, and switches to the one you pick.
+
 <p align="center"><img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"></p>
 
 ## Requirements
@@ -61,6 +63,33 @@ Menu > "Open space setup", or Control+Shift+= from anywhere, opens the saved iTe
 
 - Overlay duration slider, 0.3 to 5 seconds.
 - Launch at login, on by default.
+
+## Raycast extension
+
+`raycast/` holds a Raycast extension that lists your named Spaces and switches to one without opening the Projects
+menu bar menu. Type part of a Space's name and press Enter to switch to that Space. Command+Enter switches and opens
+that Space's setup as well.
+
+The list shows only Spaces you have named, alphabetically, with the Space number beside each. The Space you are on is
+tagged "current" and sorts after every other Space. A Space with no Mission Control shortcut cannot be switched to, so
+it is listed separately; pressing Enter on that Space opens the System Settings pane where you assign the shortcut.
+
+The extension reads its list from Projects itself over AppleScript, so Projects must be running. The first time the extension asks
+Projects for the list, macOS raises an Automation prompt asking whether Raycast may control Projects. Grant the
+Automation permission in System Settings > Privacy & Security > Automation. Rebuilding Projects from Xcode can revoke
+the permission. Grant it again in System Settings > Privacy & Security > Automation.
+
+The extension is not in the Raycast Store. Install the extension from source:
+
+```sh
+cd raycast
+npm install
+npm run dev
+```
+
+The command appears in Raycast as "Switch Project" while `npm run dev` runs, and remains installed after `npm run dev`
+stops. To reach the command by typing `p`, open Raycast's settings, find the command under Extensions, and set an
+alias. The alias is stored in your Raycast settings and is not part of the extension.
 
 ## Where data is stored
 

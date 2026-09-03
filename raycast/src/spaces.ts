@@ -16,9 +16,8 @@ export function parseSpaces(json: string): Space[] {
  * touched, so an empty name — not the absence of a record — is what "unconfigured"
  * means here.
  *
- * Alphabetical by name, except the current Space always sorts last: you never want
- * to switch to the Space you are already on, so it belongs out of the way rather
- * than sitting in the middle of the alphabetical run.
+ * Alphabetical by name. The current Space sorts last, since switching to the
+ * Space you are already on does nothing.
  */
 export function namedSpaces(spaces: Space[]): Space[] {
   return spaces

@@ -50,6 +50,14 @@ Three collaborating pieces of macOS trickery, each isolated in its own file:
   `AppleScriptRunner` runs it. Saved frames are stored back-to-front because `framesToOpen` takes the suffix of the
   list, so reopening when some windows already exist adds the frontmost ones.
 
+**Scripting** — `app/src/Scripting/` makes the app AppleScript-scriptable, which is how the Raycast extension in
+`raycast/` drives it. `Projects.sdef` is the dictionary and declares three commands: `list spaces`, `switch to space`
+and `open space setup for`. Cocoa Scripting instantiates the `NSScriptCommand` subclasses itself, so they reach
+`AppState` through `AppDelegate.shared` rather than by injection, and they run on the main thread. `list spaces` calls
+`refresh(announce: false)` on every query, which is what keeps the data live; `announce: false` also stops a query
+showing the overlay. The scripting entry points on `AppState` throw `ScriptingError` where the menu path calls
+`showAlert`, because a modal blocks the `osascript` process that sent the event.
+
 `Project` is the per-Space record, keyed to a Space by `spaceUUID`; `ProjectStore` enforces one project per Space and
 persists to `~/Library/Application Support/uk.co.29degrees.projects/projects.json`, moving an undecodable file aside.
 `Project`'s custom `init(from:)` exists purely to derive `openTerminals`/`openChrome` for records written before
@@ -68,5 +76,12 @@ those flags — keep it working when adding fields.
   `@Observable` does not track them; views hold their own `@State` and seed it in `onAppear`.
 - `OverlayPanel` sets `hosting.sizingOptions = [.intrinsicContentSize]` only. Adding `.minSize`/`.maxSize` makes the
   hosting view and the hand-set panel size fight until AppKit throws on too many constraint passes.
+- Every `NSScriptCommand` subclass needs an explicit
+  Objective-C name such as `@objc(ListSpacesCommand)`, because `<cocoa class="X"/>` is resolved with
+  `NSClassFromString` and Swift registers module-qualified names; without the attribute every call fails with
+  `-1708 Message not understood`. A list result needs the nested form
+  `<result><type type="space info" list="yes"/></result>`, because the attribute form drops `list="yes"` and
+  Foundation then raises an exception converting the whole array to one record. A returned record dictionary must be
+  keyed by the sdef property names; four-character-code keys produce an empty record and no error.
 - Signing: `app/Config.xcconfig` `#include?`s a git-ignored `app/Local.xcconfig` for `DEVELOPMENT_TEAM`. Never commit a
   team ID to the project file.
