@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="Projects Terminology">
+  <suite name="Projects Suite" code="Prjs" description="Commands for driving Projects.">
+
+    <record-type name="space info" code="SpIn" description="A desktop Space.">
+      <property name="id" code="ID  " type="text" description="The Space UUID."/>
+      <property name="name" code="pnam" type="text" description="The project name; empty when unnamed."/>
+      <property name="number" code="SpNo" type="integer" description="The desktop number."/>
+      <property name="current" code="SpCu" type="boolean" description="Whether this is the active Space."/>
+      <property name="switchable" code="SpSw" type="boolean" description="Whether a Mission Control shortcut is assigned."/>
+    </record-type>
+
+    <command name="list spaces" code="PrjsLstS" description="Every desktop Space, in order.">
+      <cocoa class="ListSpacesCommand"/>
+      <result>
+        <type type="space info" list="yes"/>
+      </result>
+    </command>
+
+  </suite>
+</dictionary>
