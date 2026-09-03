@@ -106,13 +106,19 @@ final class AppState {
   func refresh(announce: Bool) {
     missionControlShortcuts = shortcutReader()
     snapshot = SpaceList.parse(provider.displaySpaces())
+    // Only an announcing refresh claims the announcement. The scripting
+    // interface refreshes on every query and on every turn of the wait for a
+    // switch to land; if those claimed it, the observer that fires afterwards
+    // would see no change and arriving at a Space through a script would show
+    // no overlay, while arriving any other way would.
+    guard announce else { return }
     // The raw current UUID is tracked even when it names a full-screen
     // space, so that coming back from one to the desktop it was entered
     // from counts as a change and shows the overlay again.
     let previous = lastAnnouncedUUID
     lastAnnouncedUUID = snapshot.currentUUID
     guard let space = currentSpace else { return }
-    if announce, space.uuid != previous {
+    if space.uuid != previous {
       overlay.show(displayName(for: space), visibleFor: overlayDuration)
     }
   }
@@ -176,7 +182,20 @@ final class AppState {
     return "Already open"
   }
 
+  /// The menu and the hotkey call this. Failures are reported on screen, because
+  /// there is no caller to hand them to. `openSpaceSetupOrThrow` is the same work
+  /// with the reporting removed, for callers that can receive an error.
   func openSpaceSetup() {
+    do {
+      try openSpaceSetupOrThrow()
+    } catch {
+      showAlert(String(describing: error))
+    }
+  }
+
+  /// The work without the alert. Throws so a script gets the failure back rather
+  /// than a modal appearing on the machine while the script is told it succeeded.
+  func openSpaceSetupOrThrow() throws {
     guard let space = currentSpace, let project = currentProject,
       project.openTerminals || project.openChrome
     else {
@@ -192,8 +211,7 @@ final class AppState {
       var isDirectory: ObjCBool = false
       guard FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue
       else {
-        showAlert("The directory for \(name) does not exist:\n\(directory)")
-        return
+        throw ScriptingError.setupFailed("The directory for \(name) does not exist:\n\(directory)")
       }
     }
     let plan = Self.plan(
@@ -212,7 +230,7 @@ final class AppState {
         try AppleScriptRunner.run(TerminalWindows.chromeScript(urls: project.urls))
       }
     } catch {
-      showAlert("Could not open \(name): \(error)")
+      throw ScriptingError.setupFailed("Could not open \(name): \(error)")
     }
   }
 
@@ -272,8 +290,11 @@ final class AppState {
       await waitForSpace(id, timeout: .seconds(3))
     }
     refresh(announce: false)
-    guard snapshot.currentUUID == id else { throw ScriptingError.unknownSpace(id) }
-    openSpaceSetup()
+    guard let space = snapshot.spaces.first(where: { $0.uuid == id }) else {
+      throw ScriptingError.unknownSpace(id)
+    }
+    guard snapshot.currentUUID == id else { throw ScriptingError.switchDidNotLand(space.number) }
+    try openSpaceSetupOrThrow()
   }
 
   /// Polls until the active Space is `id`, or the timeout expires. Polling rather

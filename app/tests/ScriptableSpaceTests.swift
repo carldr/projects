@@ -7,8 +7,9 @@ import Testing
 struct ScriptableSpaceTests {
   private func makeState(
     uuids: [String], current: String, names: [String: String] = [:],
-    shortcuts: [Int: KeyCombo] = [:]
+    shortcuts: [Int: KeyCombo] = [:], overlay: AppStateTests.FakeOverlay? = nil
   ) -> AppState {
+    let overlay = overlay ?? AppStateTests.FakeOverlay()
     let provider = AppStateTests.FakeProvider(AppStateTests.displays(uuids, current: current))
     let store = ProjectStore(
       fileURL: FileManager.default.temporaryDirectory
@@ -20,9 +21,23 @@ struct ScriptableSpaceTests {
     let state = AppState(
       provider: provider, shortcutReader: { shortcuts }, projects: store,
       shortcuts: ShortcutStore(defaults: UserDefaults(suiteName: UUID().uuidString)!),
-      overlay: AppStateTests.FakeOverlay(), defaults: UserDefaults(suiteName: UUID().uuidString)!)
+      overlay: overlay, defaults: UserDefaults(suiteName: UUID().uuidString)!)
     state.refresh(announce: false)
     return state
+  }
+
+  /// A non-announcing refresh must not claim the announcement. The scripting
+  /// interface refreshes on every query and while waiting for a switch to land,
+  /// and if those claimed it, arriving at a Space via a script would show no
+  /// overlay while arriving any other way would.
+  @Test func refreshWithoutAnnouncingLeavesTheNextOverlayToFire() {
+    let overlay = AppStateTests.FakeOverlay()
+    let state = makeState(uuids: ["a", "b"], current: "b", names: ["b": "Website"], overlay: overlay)
+    state.refresh(announce: false)
+    #expect(overlay.shown.isEmpty)
+
+    state.refresh(announce: true)
+    #expect(overlay.shown == ["Website"])
   }
 
   @Test func numbersSpacesFromOneInOrder() {
@@ -48,13 +63,25 @@ struct ScriptableSpaceTests {
     #expect(state.scriptableSpaces().map(\.switchable) == [true, false])
   }
 
+  // Both of these assert the specific case, not just `ScriptingError.self`: "nope"
+  // has no shortcut either, so a type-only assertion would still pass if the
+  // no-shortcut guard fired in place of the unknown-id one.
   @Test func scriptedSwitchRejectsAnUnknownSpaceID() {
     let state = makeState(uuids: ["a"], current: "a", shortcuts: [1: KeyCombo(keyCode: 18)])
-    #expect(throws: ScriptingError.self) { try state.scriptedSwitch(toSpaceID: "nope") }
+    #expect(throws: ScriptingError.unknownSpace("nope")) { try state.scriptedSwitch(toSpaceID: "nope") }
   }
 
   @Test func scriptedSwitchRejectsASpaceWithNoShortcut() {
     let state = makeState(uuids: ["a"], current: "a")
-    #expect(throws: ScriptingError.self) { try state.scriptedSwitch(toSpaceID: "a") }
+    #expect(throws: ScriptingError.noShortcut(1)) { try state.scriptedSwitch(toSpaceID: "a") }
+  }
+
+  /// The scripting path reports a stalled switch as such. Reporting it as
+  /// `unknownSpace` would tell the caller the Space does not exist, which is false.
+  @Test func scriptedOpenSetupReportsAStalledSwitchAsStalled() async {
+    let state = makeState(uuids: ["a", "b"], current: "a", shortcuts: [1: KeyCombo(keyCode: 18)])
+    await #expect(throws: ScriptingError.unknownSpace("nope")) {
+      try await state.scriptedOpenSetup(forSpaceID: "nope")
+    }
   }
 }

@@ -14,10 +14,10 @@ test("parses the JXA payload", () => {
 });
 
 test("drops spaces with an empty name", () => {
-  assert.deepEqual(
-    namedSpaces(parseSpaces(json)).map((s) => s.id),
-    ["d", "c", "a"],
-  );
+  // "sorts alphabetically by name, case-insensitively" covers the order.
+  const ids = namedSpaces(parseSpaces(json)).map((s) => s.id);
+  assert.deepEqual(new Set(ids), new Set(["a", "c", "d"]));
+  assert.equal(ids.includes("b"), false);
 });
 
 test("sorts alphabetically by name, case-insensitively", () => {

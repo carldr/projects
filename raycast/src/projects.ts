@@ -32,14 +32,17 @@ export function describeError(error: unknown): string {
   // at the end of the message. Match only that trailing position, not the code
   // anywhere in the string — the app echoes ids verbatim into its own error text
   // (e.g. "No space with id bogus-600-id."), and an id is not an error code.
-  const code = message.match(/\((-?\d+)\)\s*$/)?.[1];
+  // AppleEvent and OSStatus codes are negative. Requiring the minus sign keeps a
+  // trailing number that belongs to the app's own message, such as "(42)", from
+  // being read as a code and removed by `explain`.
+  const code = message.match(/\((-\d+)\)\s*$/)?.[1];
   if (code === "-1743") {
     return "Raycast is not allowed to control Projects. Grant it under System Settings > Privacy & Security > Automation.";
   }
   if (code === "-600") {
     return "Projects is not running. Launch it and try again.";
   }
-  return explain(message);
+  return explain(message, code);
 }
 
 /**
@@ -52,13 +55,14 @@ export function describeError(error: unknown): string {
  * reader). If no such line exists, fall back to something short — never the raw blob,
  * which would put the command line itself, `osascript` and all, in a Raycast toast.
  */
-function explain(message: string): string {
+function explain(message: string, code?: string): string {
   const line = message.split("\n").find((l) => l.includes("execution error:"));
   if (line) {
     const text = line
       .replace(/^.*execution error:\s*/, "")
       .replace(/^(?:Error:\s*)+/, "")
-      .replace(/\s*\(-?\d+\)\s*$/, "")
+      // The pattern is built from `code`, so no other parenthesised number matches.
+      .replace(code ? new RegExp(`\\s*\\(${code}\\)\\s*$`) : /(?!)/, "")
       .trim();
     return text || "Projects reported an unexpected error.";
   }

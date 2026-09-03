@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<!--
+  Two rules govern this file, and breaking either produces a failure that does not
+  name its cause.
+
+  A list result must use the nested element form below,
+  <result><type type="space info" list="yes"/></result>. The attribute form,
+  <result type="space info" list="yes"/>, silently drops list="yes"; Foundation
+  then tries to convert the whole array into a single record and raises
+  NSInternalInconsistencyException naming _scriptingDescriptorOfRecordType:.
+
+  A <cocoa class="X"/> name is resolved with NSClassFromString, and Swift registers
+  classes under a module-qualified name. Each class named here therefore carries an
+  explicit @objc(X) attribute in ScriptCommands.swift. Without that attribute the
+  command is never found and every call returns -1708 Message not understood.
+-->
 <dictionary title="Projects Terminology">
   <suite name="Projects Suite" code="Prjs" description="Commands for driving Projects.">
 
