@@ -1,6 +1,24 @@
 import AppKit
 import ApplicationServices
 
+/// What `AppState` needs from `SpaceSwitcher`. `SpaceSwitcher.post` posts a real
+/// CGEvent and switches the Space of whoever runs the suite, so tests substitute a
+/// fake conforming to this instead of calling through to it.
+@MainActor
+protocol SpaceSwitching {
+  var isTrusted: Bool { get }
+  func requestTrust()
+  func post(_ combo: KeyCombo)
+}
+
+/// Forwards to `SpaceSwitcher`, the actual system access.
+@MainActor
+struct SystemSpaceSwitcher: SpaceSwitching {
+  var isTrusted: Bool { SpaceSwitcher.isTrusted }
+  func requestTrust() { SpaceSwitcher.requestTrust() }
+  func post(_ combo: KeyCombo) { SpaceSwitcher.post(combo) }
+}
+
 @MainActor
 enum SpaceSwitcher {
   static var isTrusted: Bool { AXIsProcessTrusted() }

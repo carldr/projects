@@ -22,6 +22,7 @@ final class AppState {
   private let provider: SpaceProviding
   private let shortcutReader: () -> [Int: KeyCombo]
   private let overlay: OverlayShowing
+  private let switcher: SpaceSwitching
   private let defaults: UserDefaults
   private var lastAnnouncedUUID: String?
   private var openHotKey: HotKey?
@@ -41,6 +42,7 @@ final class AppState {
     projects: ProjectStore? = nil,
     shortcuts: ShortcutStore? = nil,
     overlay: OverlayShowing? = nil,
+    switcher: SpaceSwitching? = nil,
     defaults: UserDefaults = .standard
   ) {
     self.provider = provider
@@ -48,6 +50,7 @@ final class AppState {
     self.projects = projects ?? ProjectStore()
     self.shortcuts = shortcuts ?? ShortcutStore()
     self.overlay = overlay ?? OverlayPanel()
+    self.switcher = switcher ?? SystemSpaceSwitcher()
     self.defaults = defaults
   }
 
@@ -132,14 +135,14 @@ final class AppState {
       )
       return
     }
-    guard SpaceSwitcher.isTrusted else {
-      SpaceSwitcher.requestTrust()
+    guard switcher.isTrusted else {
+      switcher.requestTrust()
       return
     }
-    SpaceSwitcher.post(combo)
+    switcher.post(combo)
   }
 
-  var accessibilityGranted: Bool { SpaceSwitcher.isTrusted }
+  var accessibilityGranted: Bool { switcher.isTrusted }
 
   static func openMissionControlShortcutsPane() {
     NSWorkspace.shared.open(
@@ -277,17 +280,17 @@ final class AppState {
     guard let combo = shortcut(for: space) else {
       throw ScriptingError.noShortcut(space.number)
     }
-    guard SpaceSwitcher.isTrusted else { throw ScriptingError.notTrusted }
-    SpaceSwitcher.post(combo)
+    guard switcher.isTrusted else { throw ScriptingError.notTrusted }
+    switcher.post(combo)
   }
 
   /// Switches, waits for the change to land, then opens the Space's setup. Waiting
   /// matters: `openSpaceSetup()` acts on `currentSpace`, so running it during the
   /// switch animation opens windows on the Space being left.
-  func scriptedOpenSetup(forSpaceID id: String) async throws {
+  func scriptedOpenSetup(forSpaceID id: String, waitTimeout: Duration = .seconds(3)) async throws {
     if snapshot.currentUUID != id {
       try scriptedSwitch(toSpaceID: id)
-      await waitForSpace(id, timeout: .seconds(3))
+      await waitForSpace(id, timeout: waitTimeout)
     }
     refresh(announce: false)
     guard let space = snapshot.spaces.first(where: { $0.uuid == id }) else {

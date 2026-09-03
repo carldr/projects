@@ -7,10 +7,12 @@ import Testing
 struct ScriptableSpaceTests {
   private func makeState(
     uuids: [String], current: String, names: [String: String] = [:],
-    shortcuts: [Int: KeyCombo] = [:], overlay: AppStateTests.FakeOverlay? = nil
+    shortcuts: [Int: KeyCombo] = [:], overlay: AppStateTests.FakeOverlay? = nil,
+    provider: AppStateTests.FakeProvider? = nil, switcher: AppStateTests.FakeSwitcher? = nil
   ) -> AppState {
     let overlay = overlay ?? AppStateTests.FakeOverlay()
-    let provider = AppStateTests.FakeProvider(AppStateTests.displays(uuids, current: current))
+    let provider = provider ?? AppStateTests.FakeProvider(AppStateTests.displays(uuids, current: current))
+    let switcher = switcher ?? AppStateTests.FakeSwitcher()
     let store = ProjectStore(
       fileURL: FileManager.default.temporaryDirectory
         .appendingPathComponent("ScriptableSpaceTests-\(UUID().uuidString)")
@@ -21,7 +23,7 @@ struct ScriptableSpaceTests {
     let state = AppState(
       provider: provider, shortcutReader: { shortcuts }, projects: store,
       shortcuts: ShortcutStore(defaults: UserDefaults(suiteName: UUID().uuidString)!),
-      overlay: overlay, defaults: UserDefaults(suiteName: UUID().uuidString)!)
+      overlay: overlay, switcher: switcher, defaults: UserDefaults(suiteName: UUID().uuidString)!)
     state.refresh(announce: false)
     return state
   }
@@ -78,10 +80,35 @@ struct ScriptableSpaceTests {
 
   /// The scripting path reports a stalled switch as such. Reporting it as
   /// `unknownSpace` would tell the caller the Space does not exist, which is false.
+  /// The switcher's `post` here does nothing, so the wait always times out: no test
+  /// may reach the real `SpaceSwitcher.post`, which would switch the Space of
+  /// whoever runs the suite.
   @Test func scriptedOpenSetupReportsAStalledSwitchAsStalled() async {
-    let state = makeState(uuids: ["a", "b"], current: "a", shortcuts: [1: KeyCombo(keyCode: 18)])
-    await #expect(throws: ScriptingError.unknownSpace("nope")) {
-      try await state.scriptedOpenSetup(forSpaceID: "nope")
+    let switcher = AppStateTests.FakeSwitcher()
+    let state = makeState(
+      uuids: ["a", "b"], current: "a", shortcuts: [2: KeyCombo(keyCode: 19)], switcher: switcher)
+    await #expect(throws: ScriptingError.switchDidNotLand(2)) {
+      try await state.scriptedOpenSetup(forSpaceID: "b", waitTimeout: .milliseconds(50))
     }
+    #expect(switcher.posted == [KeyCombo(keyCode: 19)])
+  }
+
+  /// The success path: the switcher's `post` moves the fake provider's current
+  /// Space to the target, `waitForSpace` sees it land, and `scriptedOpenSetup`
+  /// proceeds to `openSpaceSetupOrThrow`. No project is configured for "b", so
+  /// `openSpaceSetup()` shows "Nothing to open for this space" and returns without
+  /// running AppleScript — the overlay text is a safe signal that the wait
+  /// completed and setup ran, without touching iTerm2 or Chrome.
+  @Test func scriptedOpenSetupProceedsOnceTheSwitchLands() async throws {
+    let provider = AppStateTests.FakeProvider(AppStateTests.displays(["a", "b"], current: "a"))
+    let switcher = AppStateTests.FakeSwitcher()
+    switcher.onPost = { _ in provider.displays = AppStateTests.displays(["a", "b"], current: "b") }
+    let overlay = AppStateTests.FakeOverlay()
+    let state = makeState(
+      uuids: ["a", "b"], current: "a", shortcuts: [2: KeyCombo(keyCode: 19)], overlay: overlay,
+      provider: provider, switcher: switcher)
+    try await state.scriptedOpenSetup(forSpaceID: "b", waitTimeout: .milliseconds(50))
+    #expect(switcher.posted == [KeyCombo(keyCode: 19)])
+    #expect(overlay.shown == ["Nothing to open for this space"])
   }
 }

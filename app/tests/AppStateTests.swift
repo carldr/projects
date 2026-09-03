@@ -16,6 +16,20 @@ struct AppStateTests {
     func show(_ text: String, visibleFor duration: TimeInterval) { shown.append(text) }
   }
 
+  /// `post` never touches the real Space; it only records the combo and runs
+  /// `onPost`, which a test uses to move a `FakeProvider` to simulate the switch
+  /// landing. Leaving `onPost` nil simulates a stall.
+  final class FakeSwitcher: SpaceSwitching {
+    var isTrusted = true
+    var posted: [KeyCombo] = []
+    var onPost: ((KeyCombo) -> Void)?
+    func requestTrust() {}
+    func post(_ combo: KeyCombo) {
+      posted.append(combo)
+      onPost?(combo)
+    }
+  }
+
   static func displays(_ uuids: [String], current: String) -> [[String: Any]] {
     [["Spaces": uuids.map { ["uuid": $0, "type": 0] }, "Current Space": ["uuid": current, "type": 0]]]
   }
