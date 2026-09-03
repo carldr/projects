@@ -1,0 +1,4 @@
+{
+  "recommendations": ["swiftlang.swift-vscode", "esbenp.prettier-vscode"],
+  "unwantedRecommendations": ["sswg.swift-lang"]
+}
