@@ -8,11 +8,20 @@ For each Space you can save the positions of your iTerm2 windows and reopen them
 
 The repository also holds a Raycast extension, which lists your projects, filters them as you type, and switches to the one you pick. Give the extension's command a Raycast alias. To switch to a project, type that alias, then a few letters of the project's name, then Enter. The extension matches on the name, so you never type the Space number.
 
-<p align="center"><img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"></p>
+<p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
+  <img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"><br>
+  <em>The menu bar item lists every Space and ticks the current one.</em>
+</p>
 
-<p align="center"><img src="docs/images/overlay.png" width="500" alt="The name of a Space in large white text on a dark rounded rectangle, centred on the display"></p>
+<p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
+  <img src="docs/images/overlay.png" width="500" alt="The name of a Space in large white text on a dark rounded rectangle, centred on the display"><br>
+  <em>Switching Space shows this overlay, which names the Space you arrive on and then fades.</em>
+</p>
 
-<p align="center"><img src="docs/images/raycast.png" width="600" alt="The Raycast command: a filter field, then named projects in alphabetical order, each with its Space number on the right"></p>
+<p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
+  <img src="docs/images/raycast.png" width="600" alt="The Raycast command: a filter field, then named projects in alphabetical order, each with its Space number on the right"><br>
+  <em>The Raycast command filters your projects by name. Two names are blurred here.</em>
+</p>
 
 ## Requirements
 
