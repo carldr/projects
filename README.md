@@ -1,12 +1,12 @@
 # Projects
 
-Projects is a macOS menu bar app for people who keep one Space per project and run many Spaces.
+Projects is a macOS menu bar app for people who keep one Space per project and run many Spaces. Running an agent per project puts a terminal and a browser window on each Space, and the count of Spaces grows with the count of projects.
 
 You give each Space a name in the app. The menu bar item shows the number of the current Space and that name, for example "7 Website". When you switch Space, the Space's name appears in large white text in the middle of the primary display, then fades out. The menu lists every Space; clicking one switches to it.
 
 For each Space you can save the positions of your iTerm2 windows and reopen them later in a chosen directory, and open a Chrome window with a list of URLs.
 
-The repository also holds a Raycast extension, which lists your projects, filters them as you type, and switches to the one you pick.
+The repository also holds a Raycast extension, which lists your projects, filters them as you type, and switches to the one you pick. Give the extension's command a Raycast alias. To switch to a project, type that alias, then a few letters of the project's name, then Enter. The extension matches on the name, so you never type the Space number.
 
 <p align="center"><img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"></p>
 
