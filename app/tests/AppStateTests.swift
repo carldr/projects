@@ -7,8 +7,31 @@ import Testing
 struct AppStateTests {
   final class FakeProvider: SpaceProviding {
     var displays: [[String: Any]]
+    private var pendingLanding: (target: [[String: Any]], callsRemaining: Int)?
+
     init(_ displays: [[String: Any]]) { self.displays = displays }
-    func displaySpaces() -> [[String: Any]] { displays }
+
+    func displaySpaces() -> [[String: Any]] {
+      if var pending = pendingLanding {
+        pending.callsRemaining -= 1
+        if pending.callsRemaining <= 0 {
+          displays = pending.target
+          pendingLanding = nil
+        } else {
+          pendingLanding = pending
+        }
+      }
+      return displays
+    }
+
+    /// Makes `displaySpaces()` keep returning the current `displays` for
+    /// `callsUntilLanding` further calls, then switch to `target` and stay
+    /// there. Lets a test simulate a switch that takes more than one poll to
+    /// land, so a caller that waits by polling is exercised rather than
+    /// satisfied on its first read.
+    func landOn(_ target: [[String: Any]], afterCalls callsUntilLanding: Int) {
+      pendingLanding = (target, callsUntilLanding)
+    }
   }
 
   final class FakeOverlay: OverlayShowing {
@@ -34,17 +57,24 @@ struct AppStateTests {
     [["Spaces": uuids.map { ["uuid": $0, "type": 0] }, "Current Space": ["uuid": current, "type": 0]]]
   }
 
-  // `overlay` defaults to nil rather than to FakeOverlay(): in Swift 5
-  // language mode, a default argument value is evaluated in a synchronous
-  // nonisolated context even inside an @MainActor struct, so a default
-  // that constructs a @MainActor-isolated type (FakeOverlay, via
-  // OverlayShowing) fails to typecheck ("call to main actor-isolated
-  // initializer 'init()' in a synchronous nonisolated context").
+  // `overlay` and `switcher` default to nil rather than to FakeOverlay() and
+  // FakeSwitcher(): in Swift 5 language mode, a default argument value is
+  // evaluated in a synchronous nonisolated context even inside an
+  // @MainActor struct, so a default that constructs a @MainActor-isolated
+  // type (FakeOverlay or FakeSwitcher, via OverlayShowing or SpaceSwitching)
+  // fails to typecheck ("call to main actor-isolated initializer 'init()' in
+  // a synchronous nonisolated context").
+  //
+  // `switcher` defaults to a fake rather than leaving it unset: an unset
+  // `switcher` resolves to `SystemSpaceSwitcher`, which posts a real CGEvent
+  // and would switch the Space of whoever runs the suite.
   func makeState(
     _ provider: FakeProvider, overlay: FakeOverlay? = nil,
+    switcher: FakeSwitcher? = nil,
     shortcuts: [Int: KeyCombo] = [:]
   ) -> AppState {
     let overlay = overlay ?? FakeOverlay()
+    let switcher = switcher ?? FakeSwitcher()
     let file = FileManager.default.temporaryDirectory
       .appendingPathComponent("AppStateTests-\(UUID().uuidString)/projects.json")
     let suite = "AppStateTests-\(UUID().uuidString)"
@@ -53,7 +83,7 @@ struct AppStateTests {
     return AppState(
       provider: provider, shortcutReader: { shortcuts },
       projects: ProjectStore(fileURL: file),
-      shortcuts: ShortcutStore(defaults: defaults), overlay: overlay, defaults: defaults)
+      shortcuts: ShortcutStore(defaults: defaults), overlay: overlay, switcher: switcher, defaults: defaults)
   }
 
   @Test func refreshLoadsSnapshotAndTitle() {

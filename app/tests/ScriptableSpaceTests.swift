@@ -93,16 +93,21 @@ struct ScriptableSpaceTests {
     #expect(switcher.posted == [KeyCombo(keyCode: 19)])
   }
 
-  /// The success path: the switcher's `post` moves the fake provider's current
-  /// Space to the target, `waitForSpace` sees it land, and `scriptedOpenSetup`
-  /// proceeds to `openSpaceSetupOrThrow`. No project is configured for "b", so
-  /// `openSpaceSetup()` shows "Nothing to open for this space" and returns without
-  /// running AppleScript — the overlay text is a safe signal that the wait
-  /// completed and setup ran, without touching iTerm2 or Chrome.
+  /// The success path: the switcher's `post` starts the fake provider toward the
+  /// target Space, `waitForSpace` polls until it lands, and `scriptedOpenSetup`
+  /// proceeds to `openSpaceSetupOrThrow`. The provider still reports "a" for the
+  /// first call after `post` and only "b" from the second call on, so this fails
+  /// if `waitForSpace`'s polling is removed — see the comment on `landOn`. No
+  /// project is configured for "b", so `openSpaceSetup()` shows "Nothing to open
+  /// for this space" and returns without running AppleScript — the overlay text
+  /// is a safe signal that the wait completed and setup ran, without touching
+  /// iTerm2 or Chrome.
   @Test func scriptedOpenSetupProceedsOnceTheSwitchLands() async throws {
     let provider = AppStateTests.FakeProvider(AppStateTests.displays(["a", "b"], current: "a"))
     let switcher = AppStateTests.FakeSwitcher()
-    switcher.onPost = { _ in provider.displays = AppStateTests.displays(["a", "b"], current: "b") }
+    switcher.onPost = { _ in
+      provider.landOn(AppStateTests.displays(["a", "b"], current: "b"), afterCalls: 2)
+    }
     let overlay = AppStateTests.FakeOverlay()
     let state = makeState(
       uuids: ["a", "b"], current: "a", shortcuts: [2: KeyCombo(keyCode: 19)], overlay: overlay,
