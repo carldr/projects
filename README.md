@@ -10,6 +10,10 @@ The repository also holds a Raycast extension, which lists your projects, filter
 
 <p align="center"><img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"></p>
 
+<p align="center"><img src="docs/images/overlay.png" width="500" alt="The name of a Space in large white text on a dark rounded rectangle, centred on the display"></p>
+
+<p align="center"><img src="docs/images/raycast.png" width="600" alt="The Raycast command: a filter field, then named projects in alphabetical order, each with its Space number on the right"></p>
+
 ## Requirements
 
 - macOS 14 Sonoma or later, with "Displays have separate Spaces" turned off in System Settings > Desktop & Dock. The app reads the Spaces of the first display only, so with "Displays have separate Spaces" on, the other displays' Spaces are misreported.
