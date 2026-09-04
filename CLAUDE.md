@@ -51,10 +51,10 @@ README.md covers the user-facing behaviour and the macOS permissions. Read READM
 ## Architecture: the app
 
 `AppState` (`app/src/AppState.swift`) is the only stateful object. It is `@MainActor @Observable`, owns `ProjectStore`
-and `ShortcutStore`, and every view reads `AppState` through `@Bindable`. `AppState.init` takes four seams, and every
+and `ShortcutStore`, and every view reads `AppState` through `@Bindable`. `AppState.init` takes five seams, and every
 call `AppState` makes to the system goes through one of them: `SpaceProviding`, `OverlayShowing`, the Mission Control
-shortcut reader closure, and `UserDefaults`. Tests substitute a fake for each of those four seams. Put new system
-access behind the same pattern rather than calling into AppKit from `AppState`.
+shortcut reader closure, `SpaceSwitching`, and `UserDefaults`. Tests substitute a fake for each of those five seams.
+Put new system access behind the same pattern rather than calling into AppKit from `AppState`.
 
 macOS publishes no API for any of the three things this app does, so each workaround is isolated in one file, and that
 file's comments carry the detail:
