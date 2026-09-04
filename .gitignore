@@ -27,3 +27,6 @@ Package.resolved
 # Superpowers working documents (specs, plans, SDD workspace)
 docs/superpowers/
 .superpowers/
+
+# npm
+node_modules/

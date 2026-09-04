@@ -6,5 +6,9 @@
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Opens iTerm2 and Chrome windows for a project.</string>
+	<key>NSAppleScriptEnabled</key>
+	<true/>
+	<key>OSAScriptingDefinition</key>
+	<string>Projects.sdef</string>
 </dict>
 </plist>

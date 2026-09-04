@@ -1,12 +1,27 @@
 # Projects
 
-Projects is a macOS menu bar app for people who keep one Space per project and run many Spaces.
+Projects is a macOS menu bar app for people who keep one Space per project and run many Spaces. Running an agent per project puts a terminal and a browser window on each Space, and the count of Spaces grows with the count of projects.
 
 You give each Space a name in the app. The menu bar item shows the number of the current Space and that name, for example "7 Website". When you switch Space, the Space's name appears in large white text in the middle of the primary display, then fades out. The menu lists every Space; clicking one switches to it.
 
 For each Space you can save the positions of your iTerm2 windows and reopen them later in a chosen directory, and open a Chrome window with a list of URLs.
 
-<p align="center"><img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"></p>
+The repository also holds a Raycast extension, which lists your projects, filters them as you type, and switches to the one you pick. Give the extension's command a Raycast alias. To switch to a project, type that alias, then a few letters of the project's name, then Enter. The extension matches on the name, so you never type the Space number.
+
+<p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
+  <img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"><br>
+  <em>The menu bar item lists every Space and ticks the current one.</em>
+</p>
+
+<p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
+  <img src="docs/images/overlay.png" width="500" alt="The name of a Space in large white text on a dark rounded rectangle, centred on the display"><br>
+  <em>Switching Space shows this overlay, which names the Space you arrive on and then fades.</em>
+</p>
+
+<p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
+  <img src="docs/images/raycast.png" width="600" alt="The Raycast command: a filter field, then named projects in alphabetical order, each with its Space number on the right"><br>
+  <em>The Raycast command filters your projects by name. Two names are blurred here.</em>
+</p>
 
 ## Requirements
 
@@ -18,17 +33,26 @@ Spaces are created in Mission Control (Control+Up, then the + at the top right).
 
 ## Building and first run
 
-Open `Projects.xcodeproj` and press Run. The menu bar item appears at once; the app has no Dock icon and no main window.
+Open `app/Projects.xcodeproj` and press Run. The menu bar item appears at once; the app has no Dock icon and no main window.
 
-The project file sets no signing team. Xcode signs the build to run locally, which is all the app needs. To sign with your own Apple Developer team instead, create a file named `Local.xcconfig` next to `Projects.xcodeproj` containing `DEVELOPMENT_TEAM = <your team ID>`; the file is git-ignored.
+The project file sets no signing team. Xcode signs the build to run locally, which is all the app needs. To sign with your own Apple Developer team instead, create a file named `Local.xcconfig` next to `app/Projects.xcodeproj` containing `DEVELOPMENT_TEAM = <your team ID>`; the file is git-ignored.
 
 A Run build is enough to keep using the app. Archive only to install a copy outside Xcode: Product > Archive, Distribute App > Custom > Copy App, then move `Projects.app` to `/Applications`.
 
-Sources are in `src/`, tests in `tests/`. Run the tests with Product > Test in Xcode, or:
+Sources are in `app/src/`, tests in `app/tests/`. The Raycast extension is in `raycast/`, with its own sources and tests.
+
+Run the app's tests with Product > Test in Xcode. The root `package.json` runs the app and the extension from the command line. The root `package.json` declares no dependencies, so the root needs no `npm install`.
 
 ```sh
-xcodebuild test -project Projects.xcodeproj -scheme Projects -destination 'platform=macOS'
+npm test                   # both suites
+npm run app:test           # the app's suite alone
+npm run app:build          # build the app without running its tests
+npm run raycast:test       # the extension's suite alone
+npm run raycast:typecheck  # TypeScript over the extension
+npm run raycast:dev        # install the extension into Raycast and rebuild on every save
 ```
+
+`npm test` runs `scripts/test.mjs`, a harness over both suites, rather than either suite's own runner. `scripts/test.mjs` prints one line per test and nothing else, runs both suites even when the first suite fails, and repeats every failure at the end with its reason and the file and line it came from.
 
 ## Permissions
 
@@ -61,6 +85,44 @@ Menu > "Open space setup", or Control+Shift+= from anywhere, opens the saved iTe
 
 - Overlay duration slider, 0.3 to 5 seconds.
 - Launch at login, on by default.
+
+## Raycast extension
+
+`raycast/` holds a Raycast extension that lists your named Spaces and switches to one without opening the Projects
+menu bar menu. Type part of a Space's name and press Enter to switch to that Space. Command+Enter switches and opens
+that Space's setup as well.
+
+The list shows only Spaces you have named, alphabetically, with the Space number beside each. The Space you are on is
+tagged "current" and sorts after every other Space. A Space with no Mission Control shortcut cannot be switched to, so
+it is listed separately; pressing Enter on that Space opens the System Settings pane where you assign the shortcut.
+
+The extension reads its list from Projects itself over AppleScript, so Projects must be running. The first time the extension asks
+Projects for the list, macOS raises an Automation prompt asking whether Raycast may control Projects. Grant the
+Automation permission in System Settings > Privacy & Security > Automation. Rebuilding Projects from Xcode can revoke
+the permission. Grant it again in System Settings > Privacy & Security > Automation.
+
+The extension is not in the Raycast Store, so you install the extension from source. Both commands below run from the
+root of the repository.
+
+`npm install` fetches the extension's dependencies. Run `npm install` once, and again whenever those dependencies
+change.
+
+```sh
+npm install
+```
+
+`npm run raycast:dev` puts the Switch Project command into Raycast and rebuilds that command on every save.
+
+```sh
+npm run raycast:dev
+```
+
+Raycast loads the rebuilt command the next time you open Switch Project. Leave `npm run raycast:dev` running while you
+work on the extension, and stop `npm run raycast:dev` with Control+C when you have finished.
+
+The command appears in Raycast as "Switch Project" while `npm run raycast:dev` runs, and remains installed after
+`npm run raycast:dev` stops. To reach the command by typing `p`, open Raycast's settings, find the command under
+Extensions, and set an alias. The alias is stored in your Raycast settings and is not part of the extension.
 
 ## Where data is stored
 

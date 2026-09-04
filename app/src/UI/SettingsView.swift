@@ -211,7 +211,7 @@ private struct SpaceEditor: View {
 
 private struct ShortcutsTab: View {
   @Bindable var state: AppState
-  @State private var trusted = SpaceSwitcher.isTrusted
+  @State private var trusted = false
 
   var body: some View {
     Form {
@@ -259,7 +259,7 @@ private struct ShortcutsTab: View {
           HStack {
             Text(trusted ? "Granted" : "Not granted")
             Button("Open System Settings") { SpaceSwitcher.openAccessibilityPane() }
-            Button("Recheck") { trusted = SpaceSwitcher.isTrusted }
+            Button("Recheck") { trusted = state.accessibilityGranted }
           }
         }
         Text("Needed to send the switch-space keystrokes.")
@@ -267,7 +267,7 @@ private struct ShortcutsTab: View {
       }
     }
     .formStyle(.grouped)
-    .onAppear { trusted = SpaceSwitcher.isTrusted }
+    .onAppear { trusted = state.accessibilityGranted }
   }
 }
 

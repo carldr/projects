@@ -22,6 +22,7 @@ final class AppState {
   private let provider: SpaceProviding
   private let shortcutReader: () -> [Int: KeyCombo]
   private let overlay: OverlayShowing
+  private let switcher: SpaceSwitching
   private let defaults: UserDefaults
   private var lastAnnouncedUUID: String?
   private var openHotKey: HotKey?
@@ -41,6 +42,7 @@ final class AppState {
     projects: ProjectStore? = nil,
     shortcuts: ShortcutStore? = nil,
     overlay: OverlayShowing? = nil,
+    switcher: SpaceSwitching? = nil,
     defaults: UserDefaults = .standard
   ) {
     self.provider = provider
@@ -48,6 +50,7 @@ final class AppState {
     self.projects = projects ?? ProjectStore()
     self.shortcuts = shortcuts ?? ShortcutStore()
     self.overlay = overlay ?? OverlayPanel()
+    self.switcher = switcher ?? SystemSpaceSwitcher()
     self.defaults = defaults
   }
 
@@ -106,13 +109,19 @@ final class AppState {
   func refresh(announce: Bool) {
     missionControlShortcuts = shortcutReader()
     snapshot = SpaceList.parse(provider.displaySpaces())
+    // Only an announcing refresh claims the announcement. The scripting
+    // interface refreshes on every query and on every turn of the wait for a
+    // switch to land; if those claimed it, the observer that fires afterwards
+    // would see no change and arriving at a Space through a script would show
+    // no overlay, while arriving any other way would.
+    guard announce else { return }
     // The raw current UUID is tracked even when it names a full-screen
     // space, so that coming back from one to the desktop it was entered
     // from counts as a change and shows the overlay again.
     let previous = lastAnnouncedUUID
     lastAnnouncedUUID = snapshot.currentUUID
     guard let space = currentSpace else { return }
-    if announce, space.uuid != previous {
+    if space.uuid != previous {
       overlay.show(displayName(for: space), visibleFor: overlayDuration)
     }
   }
@@ -126,14 +135,14 @@ final class AppState {
       )
       return
     }
-    guard SpaceSwitcher.isTrusted else {
-      SpaceSwitcher.requestTrust()
+    guard switcher.isTrusted else {
+      switcher.requestTrust()
       return
     }
-    SpaceSwitcher.post(combo)
+    switcher.post(combo)
   }
 
-  var accessibilityGranted: Bool { SpaceSwitcher.isTrusted }
+  var accessibilityGranted: Bool { switcher.isTrusted }
 
   static func openMissionControlShortcutsPane() {
     NSWorkspace.shared.open(
@@ -176,7 +185,20 @@ final class AppState {
     return "Already open"
   }
 
+  /// The menu and the hotkey call this. Failures are reported on screen, because
+  /// there is no caller to hand them to. `openSpaceSetupOrThrow` is the same work
+  /// with the reporting removed, for callers that can receive an error.
   func openSpaceSetup() {
+    do {
+      try openSpaceSetupOrThrow()
+    } catch {
+      showAlert(String(describing: error))
+    }
+  }
+
+  /// The work without the alert. Throws so a script gets the failure back rather
+  /// than a modal appearing on the machine while the script is told it succeeded.
+  func openSpaceSetupOrThrow() throws {
     guard let space = currentSpace, let project = currentProject,
       project.openTerminals || project.openChrome
     else {
@@ -192,8 +214,7 @@ final class AppState {
       var isDirectory: ObjCBool = false
       guard FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue
       else {
-        showAlert("The directory for \(name) does not exist:\n\(directory)")
-        return
+        throw ScriptingError.setupFailed("The directory for \(name) does not exist:\n\(directory)")
       }
     }
     let plan = Self.plan(
@@ -212,7 +233,7 @@ final class AppState {
         try AppleScriptRunner.run(TerminalWindows.chromeScript(urls: project.urls))
       }
     } catch {
-      showAlert("Could not open \(name): \(error)")
+      throw ScriptingError.setupFailed("Could not open \(name): \(error)")
     }
   }
 
@@ -233,6 +254,71 @@ final class AppState {
     // windows opened when some already exist are the frontmost ones.
     project.windows = bounds.reversed().map(TerminalWindow.init(rect:))
     update(project)
+  }
+
+  // MARK: Scripting
+
+  /// Every desktop Space, for the AppleScript interface. Unfiltered: clients decide
+  /// what to show.
+  func scriptableSpaces() -> [ScriptableSpace] {
+    snapshot.spaces.map { space in
+      ScriptableSpace(
+        id: space.uuid,
+        name: project(for: space)?.name ?? "",
+        number: space.number,
+        current: space.uuid == snapshot.currentUUID,
+        switchable: shortcut(for: space) != nil)
+    }
+  }
+
+  /// Switches without alerting. Throws so the caller — an osascript process — gets
+  /// the failure back instead of a modal it cannot dismiss.
+  func scriptedSwitch(toSpaceID id: String) throws {
+    guard let space = snapshot.spaces.first(where: { $0.uuid == id }) else {
+      throw ScriptingError.unknownSpace(id)
+    }
+    guard let combo = shortcut(for: space) else {
+      throw ScriptingError.noShortcut(space.number)
+    }
+    guard switcher.isTrusted else { throw ScriptingError.notTrusted }
+    switcher.post(combo)
+  }
+
+  /// Switches, waits for the change to land, then opens the Space's setup. Waiting
+  /// matters: `openSpaceSetup()` acts on `currentSpace`, so running it during the
+  /// switch animation opens windows on the Space being left.
+  func scriptedOpenSetup(forSpaceID id: String, waitTimeout: Duration = .seconds(3)) async throws {
+    if snapshot.currentUUID != id {
+      try scriptedSwitch(toSpaceID: id)
+      await waitForSpace(id, timeout: waitTimeout)
+    }
+    refresh(announce: false)
+    guard let space = snapshot.spaces.first(where: { $0.uuid == id }) else {
+      throw ScriptingError.unknownSpace(id)
+    }
+    guard snapshot.currentUUID == id else { throw ScriptingError.switchDidNotLand(space.number) }
+    try openSpaceSetupOrThrow()
+  }
+
+  /// Polls until the active Space is `id`, or the timeout expires. Polling rather
+  /// than observing: the notification may already have fired before we start.
+  private func waitForSpace(_ id: String, timeout: Duration) async {
+    let deadline = ContinuousClock.now.advanced(by: timeout)
+    while ContinuousClock.now < deadline {
+      refresh(announce: false)
+      if snapshot.currentUUID == id { return }
+      // A cancelled sleep throws immediately rather than suspending, so
+      // `try?` alone would spin the loop for the rest of the budget,
+      // calling refresh() — a SkyLight call plus a cross-process
+      // preferences read — on every turn with no delay. Treat cancellation
+      // as abandoning the wait: the caller's post-wait guard still catches
+      // a Space that never arrived.
+      do {
+        try await Task.sleep(for: .milliseconds(50))
+      } catch {
+        return
+      }
+    }
   }
 
   // MARK: Settings values
