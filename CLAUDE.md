@@ -17,7 +17,8 @@ npm run raycast:dev        # install the extension into Raycast, then rebuild on
 ```
 
 `npm test` runs `scripts/test.mjs`, a harness over both suites rather than either suite's own runner.
-`scripts/test.mjs` prints one line per test, and nothing else while every test passes and every line arrives. Both suites
+`scripts/test.mjs` prints one line per test, then a summary line counting the tests, the failures, and each suite's
+share of the tests. Both suites
 run even when the first one fails, and every failure is repeated at the end with its reason and its file and line.
 `app:test` and `raycast:test` run `xcodebuild` and `node --test` unfiltered, for when `scripts/test.mjs` hides
 something you need.

@@ -182,4 +182,17 @@ for (const { part, output } of unparsed) {
   console.log(output);
 }
 
+// Last, so it survives a long list or a dumped log. The per-suite counts are here
+// because a green app suite says nothing about the extension, and a green extension
+// suite says nothing about the app: a zero beside either name is a suite that did not
+// run. The counts come from each suite's own total where it printed one, so a lost
+// result line leaves the summary correct.
+const counted = ({ seen, expected }) => expected ?? seen;
+const appTests = counted(appCounts);
+const raycastTests = counted(raycastCounts);
+const summary =
+  `${appTests + raycastTests} tests, ${failures.length} ${failures.length === 1 ? "failure" : "failures"} ` +
+  `(${appTests} app, ${raycastTests} raycast)`;
+console.log("\n" + (failures.length === 0 ? green(summary) : red(summary)));
+
 process.exit(app.code === 0 && raycast.code === 0 && failures.length === 0 ? 0 : 1);
