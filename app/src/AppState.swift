@@ -14,7 +14,11 @@ final class AppState {
   private static let overlayDurationKey = "overlayDuration"
 
   private(set) var snapshot: SpaceSnapshot = .empty
-  private(set) var hotKeyRegistered = false
+  /// The desktop Space that was current before this one, or nil until the Space
+  /// has changed at least once since launch. Not persisted.
+  private(set) var previousUUID: String?
+  private(set) var openHotKeyRegistered = false
+  private(set) var previousHotKeyRegistered = false
   private(set) var missionControlShortcuts: [Int: KeyCombo] = [:]
   let projects: ProjectStore
   let shortcuts: ShortcutStore
@@ -25,7 +29,9 @@ final class AppState {
   private let switcher: SpaceSwitching
   private let defaults: UserDefaults
   private var lastAnnouncedUUID: String?
+  private var lastDesktopUUID: String?
   private var openHotKey: HotKey?
+  private var previousHotKey: HotKey?
   private var spaceObserver: NSObjectProtocol?
 
   // `projects`, `shortcuts` and `overlay` default to nil rather than to a
@@ -76,7 +82,7 @@ final class AppState {
       guard let self else { return }
       Task { @MainActor in self.refresh(announce: true) }
     }
-    registerHotKey()
+    registerHotKeys()
     if launchAtLogin == false, defaults.object(forKey: "launchAtLoginChosen") == nil {
       launchAtLogin = true
     }
@@ -109,6 +115,17 @@ final class AppState {
   func refresh(announce: Bool) {
     missionControlShortcuts = shortcutReader()
     snapshot = SpaceList.parse(provider.displaySpaces())
+    // Tracked on every refresh, announcing or not: this observes where the user
+    // is, rather than claiming an announcement, so the menu opening and the
+    // scripting poll should both keep it current.
+    //
+    // Desktop Spaces only. A full-screen window's Space has no Mission Control
+    // shortcut, so making it the previous Space would leave a target that
+    // `switchToPrevious` could never reach.
+    if let uuid = currentSpace?.uuid, uuid != lastDesktopUUID {
+      previousUUID = lastDesktopUUID
+      lastDesktopUUID = uuid
+    }
     // Only an announcing refresh claims the announcement. The scripting
     // interface refreshes on every query and on every turn of the wait for a
     // switch to land; if those claimed it, the observer that fires afterwards
@@ -140,6 +157,25 @@ final class AppState {
       return
     }
     switcher.post(combo)
+  }
+
+  /// The Space that was current before this one. Nil until the Space has changed, and
+  /// nil if that Space has since gone away.
+  var previousSpace: Space? {
+    snapshot.spaces.first { $0.uuid == previousUUID }
+  }
+
+  /// False until the Space has changed at least once, when there is nowhere to go back to.
+  var canSwitchToPrevious: Bool { previousSpace != nil }
+
+  /// The hotkey calls this. Having no previous Space is a normal state at launch
+  /// rather than a failure, so it takes the overlay instead of an alert.
+  func switchToPrevious() {
+    guard let space = previousSpace else {
+      overlay.show("No previous project", visibleFor: overlayDuration)
+      return
+    }
+    switchTo(space)
   }
 
   var accessibilityGranted: Bool { switcher.isTrusted }
@@ -267,6 +303,7 @@ final class AppState {
         name: project(for: space)?.name ?? "",
         number: space.number,
         current: space.uuid == snapshot.currentUUID,
+        previous: space.uuid == previousUUID,
         switchable: shortcut(for: space) != nil)
     }
   }
@@ -282,6 +319,13 @@ final class AppState {
     }
     guard switcher.isTrusted else { throw ScriptingError.notTrusted }
     switcher.post(combo)
+  }
+
+  /// Switches back to the Space that was current before this one. Throws rather than
+  /// showing the overlay, for the same reason `scriptedSwitch` does.
+  func scriptedSwitchToPrevious() throws {
+    guard let space = previousSpace else { throw ScriptingError.noPreviousSpace }
+    try scriptedSwitch(toSpaceID: space.uuid)
   }
 
   /// Switches, waits for the change to land, then opens the Space's setup. Waiting
@@ -346,10 +390,16 @@ final class AppState {
     }
   }
 
-  func registerHotKey() {
+  /// Re-registers both hotkeys. Called on launch and whenever either is rebound,
+  /// since RegisterEventHotKey has no way to change a registered combo in place.
+  func registerHotKeys() {
     openHotKey?.unregister()
     openHotKey = HotKey(combo: shortcuts.openProject) { [weak self] in self?.openSpaceSetup() }
-    hotKeyRegistered = openHotKey != nil
+    openHotKeyRegistered = openHotKey != nil
+
+    previousHotKey?.unregister()
+    previousHotKey = HotKey(combo: shortcuts.previousProject) { [weak self] in self?.switchToPrevious() }
+    previousHotKeyRegistered = previousHotKey != nil
   }
 
   // MARK: Alerts

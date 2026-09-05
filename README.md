@@ -6,10 +6,10 @@ You give each Space a name in the app. The menu bar item shows the number of the
 
 For each Space you can save the positions of your iTerm2 windows and reopen them later in a chosen directory, and open a Chrome window with a list of URLs.
 
-The repository also holds a Raycast extension, which lists your projects, filters them as you type, and switches to the one you pick. Give the extension's command a Raycast alias. To switch to a project, type that alias, then a few letters of the project's name, then Enter. The extension matches on the name, so you never type the Space number.
+The repository also holds a Raycast extension, which lists your projects, filters them as you type, and switches to the one you pick. Give the extension's command a Raycast alias. To switch to a project, type that alias, then a few letters of the project's name, then Enter. The extension matches on the name, so you never type the Space number. A second command, Go To Previous Project, switches to the project that was current before the current project. Control+Option+Tab in the app switches to the project that was current before the current project.
 
 <p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
-  <img src="docs/images/menu.png" width="279" alt="The Projects menu: eleven named Spaces with the current one ticked, then Open space setup, Save iTerm2 windows, Settings and Quit"><br>
+  <img src="docs/images/menu.png" width="295" alt="The Projects menu: eleven named Spaces with the current one ticked, then a greyed-out Go to previous project showing Control+Option+Tab, then Open space setup, Save iTerm2 windows, Settings and Quit"><br>
   <em>The menu bar item lists every Space and ticks the current one.</em>
 </p>
 
@@ -20,7 +20,7 @@ The repository also holds a Raycast extension, which lists your projects, filter
 
 <p align="center" style="margin-bottom: 20px; border: 1px solid #ccc; border-radius: 10px; padding: 20px">
   <img src="docs/images/raycast.png" width="600" alt="The Raycast command: a filter field, then named projects in alphabetical order, each with its Space number on the right"><br>
-  <em>The Raycast command filters your projects by name. Two names are blurred here.</em>
+  <em>Switch Project filters your projects by name.</em>
 </p>
 
 ## Requirements
@@ -69,6 +69,16 @@ Those shortcuts are off by default. Enable them in System Settings > Keyboard > 
 
 The app reads the shortcuts from the system. The Shortcuts tab in Settings lists them and shows "Not set — switching will not work" for any Space without one. To give a Space a shortcut, tick that Space's "Switch to Desktop N" entry in the Mission Control list and assign a key.
 
+## Going back
+
+Control+Option+Tab switches to the Space that was current before the current Space. A second press of Control+Option+Tab switches to the Space that was current before the first press. Settings > Previous project changes the shortcut. Menu > "Go to previous project" switches to the Space that was current before the current Space, and shows Control+Option+Tab in its right-hand column.
+
+At launch the app holds no previous Space, a press of Control+Option+Tab does nothing, and the menu item is greyed out. The app records the previous Space the first time the current Space changes. The app records the previous Space whether the change comes from the menu, from a shortcut, from Raycast or from Mission Control. The app discards the previous Space when it quits.
+
+A full-screen window's Space never becomes the previous Space. A full-screen Space has no "Switch to Desktop N" shortcut for the app to send.
+
+The app registers Control+Option+Tab system-wide. Chrome and other apps cycle tabs on Control+Tab, and a system-wide Control+Tab would stop those apps from receiving the keystroke, so the default is Control+Option+Tab.
+
 ## Setting up a Space
 
 Open Settings from the menu, or press Command+comma while the menu is open. The Spaces tab lists every Space; click one to edit it.
@@ -88,21 +98,26 @@ Menu > "Open space setup", or Control+Shift+= from anywhere, opens the saved iTe
 
 ## Raycast extension
 
-`raycast/` holds a Raycast extension that lists your named Spaces and switches to one without opening the Projects
-menu bar menu. Type part of a Space's name and press Enter to switch to that Space. Command+Enter switches and opens
-that Space's setup as well.
+`raycast/` holds a Raycast extension with two commands, which switch Space without opening the Projects menu bar menu.
 
-The list shows only Spaces you have named, alphabetically, with the Space number beside each. The Space you are on is
-tagged "current" and sorts after every other Space. A Space with no Mission Control shortcut cannot be switched to, so
-it is listed separately; pressing Enter on that Space opens the System Settings pane where you assign the shortcut.
+Switch Project lists your named Spaces. Type part of a Space's name and press Enter to switch to that Space.
+Command+Enter switches and opens that Space's setup as well.
+
+The list shows only Spaces you have named, with the Space number beside each. The Space you were on before this one is
+tagged "previous" and sorts first, the Space you are on is tagged "current" and sorts last, and the rest are
+alphabetical in between. A Space with no Mission Control shortcut cannot be switched to, so it is listed separately;
+pressing Enter on that Space opens the System Settings pane where you assign the shortcut.
+
+Go To Previous Project shows no list and switches to the Space that was current before the current Space. With a short
+alias set in Raycast's settings, Command+Space, that alias and Enter run Go To Previous Project.
 
 The extension reads its list from Projects itself over AppleScript, so Projects must be running. The first time the extension asks
 Projects for the list, macOS raises an Automation prompt asking whether Raycast may control Projects. Grant the
 Automation permission in System Settings > Privacy & Security > Automation. Rebuilding Projects from Xcode can revoke
 the permission. Grant it again in System Settings > Privacy & Security > Automation.
 
-The extension is not in the Raycast Store, so you install the extension from source. Both commands below run from the
-root of the repository.
+The extension is not in the Raycast Store, so you install the extension from source. Both shell commands below run
+from the root of the repository.
 
 `npm install` fetches the extension's dependencies. Run `npm install` once, and again whenever those dependencies
 change.
@@ -111,18 +126,19 @@ change.
 npm install
 ```
 
-`npm run raycast:dev` puts the Switch Project command into Raycast and rebuilds that command on every save.
+`npm run raycast:dev` puts both commands into Raycast and rebuilds them on every save.
 
 ```sh
 npm run raycast:dev
 ```
 
-Raycast loads the rebuilt command the next time you open Switch Project. Leave `npm run raycast:dev` running while you
+Raycast loads a rebuilt command the next time you open that command. Leave `npm run raycast:dev` running while you
 work on the extension, and stop `npm run raycast:dev` with Control+C when you have finished.
 
-The command appears in Raycast as "Switch Project" while `npm run raycast:dev` runs, and remains installed after
-`npm run raycast:dev` stops. To reach the command by typing `p`, open Raycast's settings, find the command under
-Extensions, and set an alias. The alias is stored in your Raycast settings and is not part of the extension.
+The commands appear in Raycast as "Switch Project" and "Go To Previous Project" while `npm run raycast:dev` runs, and
+remain installed after `npm run raycast:dev` stops. To reach a command by typing a letter or two, open Raycast's
+settings, find the command under Extensions, and set an alias. Aliases are stored in your Raycast settings and are not
+part of the extension.
 
 ## Where data is stored
 

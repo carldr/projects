@@ -18,14 +18,15 @@ export async function fetchSpaces(): Promise<Space[]> {
 }
 
 /**
- * JXA source that calls the named `Projects` command with a single Space id.
- * `id` comes from `spaceUUID` in a JSON file a user can edit by hand, so it is
- * untrusted; `JSON.stringify` escapes it into a JS string literal so it cannot
- * terminate that literal early. Exported so the escaping can be tested directly,
- * without going through `execFile`.
+ * JXA source that calls the named `Projects` command, with a single Space id when
+ * the command takes one. `id` comes from `spaceUUID` in a JSON file a user can edit
+ * by hand, so it is untrusted; `JSON.stringify` escapes it into a JS string literal
+ * so it cannot terminate that literal early. A test calls `commandSource` to check the
+ * escaping of `id` without going through `execFile`.
  */
-export function commandSource(method: string, id: string): string {
-  return `Application("Projects").${method}(${JSON.stringify(id)})`;
+export function commandSource(method: string, id?: string): string {
+  const argument = id === undefined ? "" : JSON.stringify(id);
+  return `Application("Projects").${method}(${argument})`;
 }
 
 export async function switchToSpace(id: string): Promise<void> {
@@ -34,6 +35,10 @@ export async function switchToSpace(id: string): Promise<void> {
 
 export async function openSpaceSetup(id: string): Promise<void> {
   await jxa(commandSource("openSpaceSetupFor", id));
+}
+
+export async function switchToPreviousSpace(): Promise<void> {
+  await jxa(commandSource("switchToPreviousSpace"));
 }
 
 /** Turns osascript's failures into something a Raycast toast can usefully say. */

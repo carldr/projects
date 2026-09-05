@@ -132,6 +132,74 @@ struct AppStateTests {
     #expect(overlay.shown == ["Desktop 1", "Desktop 1"])
   }
 
+  // MARK: Previous space
+
+  @Test func thereIsNoPreviousSpaceUntilTheSpaceChanges() {
+    let state = makeState(FakeProvider(Self.displays(["a", "b"], current: "a")))
+    state.refresh(announce: false)
+    state.refresh(announce: true)
+    #expect(state.previousUUID == nil)
+  }
+
+  @Test func theSpaceLeftBehindBecomesThePrevious() {
+    let provider = FakeProvider(Self.displays(["a", "b", "c"], current: "a"))
+    let state = makeState(provider)
+    state.refresh(announce: false)
+    provider.displays = Self.displays(["a", "b", "c"], current: "c")
+    state.refresh(announce: false)
+    #expect(state.previousUUID == "a")
+  }
+
+  /// A full-screen window's Space has no Mission Control shortcut, so it must not
+  /// become the previous Space: switching back to it would be impossible.
+  @Test func aFullScreenSpaceDoesNotBecomeThePrevious() {
+    let provider = FakeProvider(Self.displays(["a", "b"], current: "a"))
+    let state = makeState(provider)
+    state.refresh(announce: false)
+    provider.displays = Self.displays(["a", "b"], current: "fs")
+    state.refresh(announce: false)
+    provider.displays = Self.displays(["a", "b"], current: "b")
+    state.refresh(announce: false)
+    #expect(state.previousUUID == "a")
+  }
+
+  /// The menu item is disabled until there is somewhere to go back to.
+  @Test func cannotSwitchToPreviousBeforeTheSpaceHasChanged() {
+    let state = makeState(FakeProvider(Self.displays(["a", "b"], current: "a")))
+    state.refresh(announce: false)
+    #expect(state.canSwitchToPrevious == false)
+  }
+
+  @Test func canSwitchToPreviousOnceTheSpaceHasChanged() {
+    let provider = FakeProvider(Self.displays(["a", "b"], current: "a"))
+    let state = makeState(provider)
+    state.refresh(announce: false)
+    provider.displays = Self.displays(["a", "b"], current: "b")
+    state.refresh(announce: false)
+    #expect(state.canSwitchToPrevious)
+  }
+
+  @Test func switchingToThePreviousSpacePostsItsShortcut() {
+    let provider = FakeProvider(Self.displays(["a", "b"], current: "a"))
+    let switcher = FakeSwitcher()
+    let state = makeState(provider, switcher: switcher, shortcuts: [1: KeyCombo(keyCode: 18)])
+    state.refresh(announce: false)
+    provider.displays = Self.displays(["a", "b"], current: "b")
+    state.refresh(announce: false)
+    state.switchToPrevious()
+    #expect(switcher.posted == [KeyCombo(keyCode: 18)])
+  }
+
+  /// Nothing to switch to is not an error worth a modal, so it takes the overlay
+  /// that already reports "nothing to do" cases.
+  @Test func switchingToThePreviousSpaceWithNoPreviousShowsTheOverlay() {
+    let overlay = FakeOverlay()
+    let state = makeState(FakeProvider(Self.displays(["a"], current: "a")), overlay: overlay)
+    state.refresh(announce: false)
+    state.switchToPrevious()
+    #expect(overlay.shown == ["No previous project"])
+  }
+
   @Test func planHonoursFlags() {
     let a = TerminalWindow(left: 0, top: 0, right: 1, bottom: 1)
     let b = TerminalWindow(left: 1, top: 0, right: 2, bottom: 1)

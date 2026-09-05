@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import SwiftUI
 import Testing
 
 @testable import Projects
@@ -26,6 +27,32 @@ struct KeyComboTests {
   @Test func carbonModifiersMap() {
     // controlKey = 4096, optionKey = 2048, shiftKey = 512, cmdKey = 256
     #expect(KeyCombo(keyCode: 18, control: true, shift: true).carbonModifiers == 4096 | 512)
+  }
+
+  // A menu item shows its shortcut through SwiftUI's .keyboardShortcut, which takes a
+  // KeyEquivalent rather than a virtual key code. Only the keys named here can be
+  // shown; every other combo yields nil and its menu item shows no shortcut.
+  @Test func keyEquivalentCoversTabAndTheDigits() {
+    #expect(KeyCombo(keyCode: 48, control: true, option: true).keyEquivalent == .tab)
+    #expect(KeyCombo(keyCode: 18).keyEquivalent == KeyEquivalent("1"))
+    #expect(KeyCombo(keyCode: 29).keyEquivalent == KeyEquivalent("0"))
+  }
+
+  @Test func keyEquivalentUsesTheRecordedLabelForOtherKeys() {
+    #expect(KeyCombo(keyCode: 35, label: "P").keyEquivalent == KeyEquivalent("P"))
+    #expect(KeyCombo(keyCode: 24, control: true, shift: true, label: "=").keyEquivalent == KeyEquivalent("="))
+  }
+
+  /// Shortcuts stored before `label` existed carry no character, and a key code
+  /// outside the tables cannot be turned into one.
+  @Test func keyEquivalentIsNilForAnUnnameableKey() {
+    #expect(KeyCombo(keyCode: 35).keyEquivalent == nil)
+  }
+
+  @Test func modifiersMapToSwiftUIEventModifiers() {
+    let combo = KeyCombo(keyCode: 48, control: true, option: true)
+    #expect(combo.eventModifiers == [.control, .option])
+    #expect(KeyCombo(keyCode: 48).eventModifiers == [])
   }
 
   @Test func roundTripsThroughJSON() throws {

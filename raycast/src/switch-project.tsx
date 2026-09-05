@@ -78,15 +78,21 @@ export default function Command() {
 }
 
 /**
- * The Space number and, when current, the "current" tag apply to every row alike.
- * Unswitchable rows get one more accessory on top: the warning that explains why
- * there is no switch action here.
+ * The Space number and, when they apply, the "previous" and "current" tags apply to
+ * every row alike. A row for a Space with no Mission Control shortcut carries one
+ * further accessory, a warning icon.
  */
 function accessories(space: Space): List.Item.Accessory[] {
   // "Space 4" rather than a bare "4": Raycast renders plain accessory text in
   // the same grey pill it uses for key hints, leaving no way to tell a lone
   // digit from a key hint.
   const marks: List.Item.Accessory[] = [{ text: `Space ${space.number}` }];
+  // The previous Space sorts above the alphabetical rows. The "previous" tag names
+  // the top row as the previous Space; without the tag, the top row shows only a
+  // project name and a Space number.
+  if (space.previous) {
+    marks.push({ tag: "previous" });
+  }
   if (space.current) {
     marks.push({ tag: "current" });
   }

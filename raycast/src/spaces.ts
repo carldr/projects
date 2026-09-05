@@ -3,6 +3,7 @@ export type Space = {
   name: string;
   number: number;
   current: boolean;
+  previous: boolean;
   switchable: boolean;
 };
 
@@ -16,14 +17,16 @@ export function parseSpaces(json: string): Space[] {
  * touched, so an empty name — not the absence of a record — is what "unconfigured"
  * means here.
  *
- * Alphabetical by name. The current Space sorts last, since switching to the
- * Space you are already on does nothing.
+ * The Space that was current before the current Space sorts first. The current Space
+ * sorts last, and switching to the current Space does nothing. The Spaces between the
+ * previous Space and the current Space sort alphabetically by name.
  */
 export function namedSpaces(spaces: Space[]): Space[] {
   return spaces
     .filter((s) => s.name.trim() !== "")
     .sort(
       (a, b) =>
+        Number(b.previous) - Number(a.previous) ||
         Number(a.current) - Number(b.current) ||
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
     );

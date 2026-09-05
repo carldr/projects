@@ -8,6 +8,9 @@ nonisolated struct ScriptableSpace: Equatable, Sendable {
   let name: String
   let number: Int
   let current: Bool
+  /// The Space that was current before the current one. At most one Space has this
+  /// set, and never the current one.
+  let previous: Bool
   let switchable: Bool
 }
 
@@ -21,6 +24,8 @@ nonisolated enum ScriptingError: Error, Equatable, CustomStringConvertible {
   /// before the wait ran out. Distinct from `unknownSpace`, which would tell the
   /// caller the Space does not exist.
   case switchDidNotLand(Int)
+  /// The Space has not changed since the app launched, so there is nowhere to go back to.
+  case noPreviousSpace
   case setupFailed(String)
 
   var description: String {
@@ -30,6 +35,7 @@ nonisolated enum ScriptingError: Error, Equatable, CustomStringConvertible {
       "Desktop \(number) has no Mission Control shortcut, so it cannot be switched to."
     case .notTrusted: "Projects does not have the Accessibility permission."
     case .switchDidNotLand(let number): "Desktop \(number) did not become the active space in time."
+    case .noPreviousSpace: "There is no previous project to go back to."
     case .setupFailed(let message): message
     }
   }

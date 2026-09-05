@@ -24,6 +24,15 @@ struct MenuBarView: View {
 
       Divider()
 
+      // The shortcut is shown, not defined, here: the global hotkey is registered
+      // through Carbon in AppState. .keyboardShortcut is the only way to put a
+      // shortcut in the right-hand column of a menu item, and it also makes the
+      // combo work while the menu is open, which it already does. A combo whose key
+      // has no KeyEquivalent shows no shortcut rather than the wrong one.
+      previousProjectItem
+
+      Divider()
+
       Button("Open space setup") { state.openSpaceSetup() }
         .disabled(!state.canOpenCurrentSpace)
       Button("Save iTerm2 windows") { state.saveTerminalWindows() }
@@ -39,6 +48,17 @@ struct MenuBarView: View {
     // The menu opening is the app's third chance to notice a space change,
     // alongside launch and activeSpaceDidChangeNotification.
     .onAppear { state.refresh(announce: false) }
+  }
+
+  @ViewBuilder private var previousProjectItem: some View {
+    let button = Button("Go to previous project") { state.switchToPrevious() }
+      .disabled(!state.canSwitchToPrevious)
+    let combo = state.shortcuts.previousProject
+    if let key = combo.keyEquivalent {
+      button.keyboardShortcut(key, modifiers: combo.eventModifiers)
+    } else {
+      button
+    }
   }
 
   private func showSettings() {

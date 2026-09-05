@@ -12,6 +12,12 @@
       "title": "Switch Project",
       "description": "List your projects and switch to one",
       "mode": "view"
+    },
+    {
+      "name": "previous-project",
+      "title": "Go To Previous Project",
+      "description": "Switch back to the project you were on before this one",
+      "mode": "no-view"
     }
   ],
   "dependencies": {

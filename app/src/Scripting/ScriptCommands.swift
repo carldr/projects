@@ -39,6 +39,7 @@ final class ListSpacesCommand: NSScriptCommand {
           "name": space.name,
           "number": space.number,
           "current": space.current,
+          "previous": space.previous,
           "switchable": space.switchable,
         ] as [String: Any]
       }
@@ -63,6 +64,29 @@ final class SwitchToSpaceCommand: NSScriptCommand {
       state.refresh(announce: false)
       do {
         try state.scriptedSwitch(toSpaceID: id)
+      } catch {
+        scriptErrorNumber = errAEEventFailed
+        scriptErrorString = String(describing: error)
+      }
+      return nil
+    }
+  }
+}
+
+/// Switches back to the Space that was active before the current one.
+@objc(SwitchToPreviousSpaceCommand)
+final class SwitchToPreviousSpaceCommand: NSScriptCommand {
+  override func performDefaultImplementation() -> Any? {
+    MainActor.assumeIsolated {
+      guard let state = AppDelegate.shared?.state else {
+        reportNotReady()
+        return nil
+      }
+      // Refreshes the snapshot, not the previous pointer: `previousUUID` only
+      // moves when the Space actually changes, so a query cannot disturb it.
+      state.refresh(announce: false)
+      do {
+        try state.scriptedSwitchToPrevious()
       } catch {
         scriptErrorNumber = errAEEventFailed
         scriptErrorString = String(describing: error)

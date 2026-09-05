@@ -16,6 +16,10 @@ test("passes a plain UUID through as a single argument", () => {
   );
 });
 
+test("omits the argument list entirely for a command that takes no parameter", () => {
+  assert.equal(commandSource("switchToPreviousSpace"), 'Application("Projects").switchToPreviousSpace()');
+});
+
 test("escapes a double quote so an id cannot close the string literal early", () => {
   // Unescaped, the id's quote would close the argument and the rest would parse as
   // code: ...switchToSpace("nope") ; Application("Projects").switchToSpace("pwned")

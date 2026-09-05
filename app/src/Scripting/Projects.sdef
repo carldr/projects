@@ -23,6 +23,7 @@
       <property name="name" code="pnam" type="text" description="The project name; empty when unnamed."/>
       <property name="number" code="SpNo" type="integer" description="The desktop number."/>
       <property name="current" code="SpCu" type="boolean" description="Whether this is the active Space."/>
+      <property name="previous" code="SpPv" type="boolean" description="Whether this is the Space that was active before the current one."/>
       <property name="switchable" code="SpSw" type="boolean" description="Whether a Mission Control shortcut is assigned."/>
     </record-type>
 
@@ -36,6 +37,10 @@
     <command name="switch to space" code="PrjsSwtS" description="Switch to the Space with this id.">
       <cocoa class="SwitchToSpaceCommand"/>
       <direct-parameter type="text" description="The Space id, from list spaces."/>
+    </command>
+
+    <command name="switch to previous space" code="PrjsPrvS" description="Switch back to the Space that was active before the current one.">
+      <cocoa class="SwitchToPreviousSpaceCommand"/>
     </command>
 
     <command name="open space setup for" code="PrjsOpnS" description="Switch to a Space, then open its saved windows.">

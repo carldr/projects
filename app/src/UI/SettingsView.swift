@@ -244,14 +244,34 @@ private struct ShortcutsTab: View {
               set: { combo in
                 if let combo {
                   state.shortcuts.openProject = combo
-                  state.registerHotKey()
+                  state.registerHotKeys()
                 }
               }))
         }
-        if !state.hotKeyRegistered {
+        if !state.openHotKeyRegistered {
           Text("Could not register this hotkey. Another app may already use it.")
             .font(.caption).foregroundStyle(.secondary)
         }
+      }
+
+      Section("Previous project") {
+        LabeledContent("Hotkey") {
+          KeyRecorderView(
+            combo: Binding(
+              get: { state.shortcuts.previousProject },
+              set: { combo in
+                if let combo {
+                  state.shortcuts.previousProject = combo
+                  state.registerHotKeys()
+                }
+              }))
+        }
+        if !state.previousHotKeyRegistered {
+          Text("Could not register this hotkey. Another app may already use it.")
+            .font(.caption).foregroundStyle(.secondary)
+        }
+        Text("Switches back to the project you were on before this one.")
+          .font(.caption).foregroundStyle(.secondary)
       }
 
       Section("Accessibility") {

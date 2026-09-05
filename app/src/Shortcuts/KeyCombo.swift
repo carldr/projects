@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import SwiftUI
 
 nonisolated struct KeyCombo: Codable, Equatable, Sendable {
   var keyCode: UInt16
@@ -54,6 +55,32 @@ nonisolated struct KeyCombo: Codable, Equatable, Sendable {
     return modifiers
   }
 
+  /// The combo as SwiftUI's `.keyboardShortcut` wants it, so a menu item can show the
+  /// shortcut beside its title. `KeyEquivalent` is a character rather than a virtual
+  /// key code, so a combo whose key produces no character this type knows about
+  /// yields nil, and the menu item that would have shown it shows no shortcut.
+  var keyEquivalent: KeyEquivalent? {
+    if Int(keyCode) == kVK_Tab { return .tab }
+    if Int(keyCode) == kVK_Return { return .return }
+    if Int(keyCode) == kVK_Space { return .space }
+    if let digit = Self.digitKeyCodes.first(where: { $0.value == keyCode }) {
+      return KeyEquivalent(Character(String(digit.key)))
+    }
+    guard let character = label?.first else { return nil }
+    return KeyEquivalent(character)
+  }
+
+  // Qualified: Carbon declares an `EventModifiers` of its own, and the bare name is
+  // ambiguous in a file that imports both Carbon.HIToolbox and SwiftUI.
+  var eventModifiers: SwiftUI.EventModifiers {
+    var modifiers: SwiftUI.EventModifiers = []
+    if control { modifiers.insert(.control) }
+    if option { modifiers.insert(.option) }
+    if shift { modifiers.insert(.shift) }
+    if command { modifiers.insert(.command) }
+    return modifiers
+  }
+
   var display: String {
     var text = ""
     if control { text += "⌃" }
@@ -83,4 +110,7 @@ nonisolated struct KeyCombo: Codable, Equatable, Sendable {
 
 nonisolated enum DefaultShortcuts {
   static let openProject = KeyCombo(keyCode: UInt16(kVK_ANSI_Equal), control: true, shift: true)
+  // ⌃⌥⇥ rather than ⌃⇥: a Carbon hotkey is swallowed system-wide, and ⌃⇥ is how
+  // Chrome and others cycle tabs. No macOS symbolic hotkey binds the Tab key.
+  static let previousProject = KeyCombo(keyCode: UInt16(kVK_Tab), control: true, option: true)
 }

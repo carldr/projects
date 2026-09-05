@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { parseSpaces, namedSpaces, sections } from "../src/spaces.ts";
 
 const json = JSON.stringify([
-  { id: "a", name: "Website", number: 7, current: true, switchable: true },
-  { id: "b", name: "", number: 3, current: false, switchable: true },
-  { id: "c", name: "Dotfiles", number: 11, current: false, switchable: false },
-  { id: "d", name: "Client portal", number: 2, current: false, switchable: true },
+  { id: "a", name: "Website", number: 7, current: true, previous: false, switchable: true },
+  { id: "b", name: "", number: 3, current: false, previous: false, switchable: true },
+  { id: "c", name: "Dotfiles", number: 11, current: false, previous: false, switchable: false },
+  { id: "d", name: "Client portal", number: 2, current: false, previous: false, switchable: true },
 ]);
 
 test("parses the JXA payload", () => {
@@ -46,8 +46,8 @@ test("an empty payload yields empty sections", () => {
 
 test("sorts the current Space to the end, even when it would otherwise sort earlier", () => {
   const json = JSON.stringify([
-    { id: "a", name: "Website", number: 7, current: false, switchable: true },
-    { id: "d", name: "Client portal", number: 2, current: true, switchable: true },
+    { id: "a", name: "Website", number: 7, current: false, previous: false, switchable: true },
+    { id: "d", name: "Client portal", number: 2, current: true, previous: false, switchable: true },
   ]);
   assert.deepEqual(
     namedSpaces(parseSpaces(json)).map((s) => s.name),
@@ -55,10 +55,35 @@ test("sorts the current Space to the end, even when it would otherwise sort earl
   );
 });
 
+test("sorts the previous Space to the top, ahead of names that sort earlier", () => {
+  const json = JSON.stringify([
+    { id: "a", name: "Client portal", number: 2, current: false, previous: false, switchable: true },
+    { id: "b", name: "Website", number: 7, current: false, previous: true, switchable: true },
+    { id: "c", name: "Dotfiles", number: 11, current: false, previous: false, switchable: true },
+  ]);
+  assert.deepEqual(
+    namedSpaces(parseSpaces(json)).map((s) => s.name),
+    ["Website", "Client portal", "Dotfiles"],
+  );
+});
+
+test("puts the previous Space first and the current Space last around the alphabetical rest", () => {
+  const json = JSON.stringify([
+    { id: "a", name: "Alpha", number: 1, current: true, previous: false, switchable: true },
+    { id: "b", name: "Zulu", number: 2, current: false, previous: true, switchable: true },
+    { id: "c", name: "Mike", number: 3, current: false, previous: false, switchable: true },
+    { id: "d", name: "Bravo", number: 4, current: false, previous: false, switchable: true },
+  ]);
+  assert.deepEqual(
+    namedSpaces(parseSpaces(json)).map((s) => s.name),
+    ["Zulu", "Bravo", "Mike", "Alpha"],
+  );
+});
+
 test("keeps alphabetical order when no Space is current", () => {
   const json = JSON.stringify([
-    { id: "a", name: "Website", number: 7, current: false, switchable: true },
-    { id: "d", name: "Client portal", number: 2, current: false, switchable: true },
+    { id: "a", name: "Website", number: 7, current: false, previous: false, switchable: true },
+    { id: "d", name: "Client portal", number: 2, current: false, previous: false, switchable: true },
   ]);
   assert.deepEqual(
     namedSpaces(parseSpaces(json)).map((s) => s.name),

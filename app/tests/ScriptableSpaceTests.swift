@@ -53,6 +53,19 @@ struct ScriptableSpaceTests {
     #expect(state.scriptableSpaces().map(\.current) == [false, true, false])
   }
 
+  @Test func marksOnlyThePreviousSpace() {
+    let provider = AppStateTests.FakeProvider(AppStateTests.displays(["a", "b", "c"], current: "a"))
+    let state = makeState(uuids: ["a", "b", "c"], current: "a", provider: provider)
+    provider.displays = AppStateTests.displays(["a", "b", "c"], current: "c")
+    state.refresh(announce: false)
+    #expect(state.scriptableSpaces().map(\.previous) == [true, false, false])
+  }
+
+  @Test func marksNoSpaceAsPreviousBeforeTheSpaceHasChanged() {
+    let state = makeState(uuids: ["a", "b"], current: "a")
+    #expect(state.scriptableSpaces().map(\.previous) == [false, false])
+  }
+
   @Test func reportsUnnamedSpacesAsEmptyStringNotDesktopN() {
     let state = makeState(uuids: ["a", "b"], current: "a", names: ["a": "Website"])
     #expect(state.scriptableSpaces().map(\.name) == ["Website", ""])
@@ -71,6 +84,23 @@ struct ScriptableSpaceTests {
   @Test func scriptedSwitchRejectsAnUnknownSpaceID() {
     let state = makeState(uuids: ["a"], current: "a", shortcuts: [1: KeyCombo(keyCode: 18)])
     #expect(throws: ScriptingError.unknownSpace("nope")) { try state.scriptedSwitch(toSpaceID: "nope") }
+  }
+
+  @Test func scriptedSwitchToPreviousRejectsHavingNoPrevious() {
+    let state = makeState(uuids: ["a"], current: "a", shortcuts: [1: KeyCombo(keyCode: 18)])
+    #expect(throws: ScriptingError.noPreviousSpace) { try state.scriptedSwitchToPrevious() }
+  }
+
+  @Test func scriptedSwitchToPreviousPostsThePreviousSpacesShortcut() throws {
+    let provider = AppStateTests.FakeProvider(AppStateTests.displays(["a", "b"], current: "a"))
+    let switcher = AppStateTests.FakeSwitcher()
+    let state = makeState(
+      uuids: ["a", "b"], current: "a", shortcuts: [1: KeyCombo(keyCode: 18)],
+      provider: provider, switcher: switcher)
+    provider.displays = AppStateTests.displays(["a", "b"], current: "b")
+    state.refresh(announce: false)
+    try state.scriptedSwitchToPrevious()
+    #expect(switcher.posted == [KeyCombo(keyCode: 18)])
   }
 
   @Test func scriptedSwitchRejectsASpaceWithNoShortcut() {
