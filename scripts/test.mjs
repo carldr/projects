@@ -26,17 +26,36 @@ function fail(part, name, detail) {
   failures.push({ part, name, detail });
 }
 
+// The two streams are buffered separately and joined once the child has closed.
+// Appending both to one string as the chunks arrive splices a line of one stream
+// into a line of the other, because a chunk boundary is not a line boundary: a
+// `✔ Test x() passed` line cut in half by a write to stderr matches neither regex
+// and that test vanishes from the report. When the spliced line is a failure, the run
+// ends with nothing in the Failures block, and only the suite's own non-zero exit code
+// reports the failure.
 function run(command, args) {
   return new Promise((resolve) => {
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
-    let output = "";
-    child.stdout.on("data", (d) => (output += d));
-    child.stderr.on("data", (d) => (output += d));
-    child.on("close", (code) => resolve({ code, output }));
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (err += d));
+    child.on("close", (code) => {
+      const separator = out === "" || out.endsWith("\n") ? "" : "\n";
+      resolve({ code, output: out + separator + err });
+    });
   });
 }
 
-/** swift-testing prints an issue line before the failure line for the same test. */
+/**
+ * swift-testing prints an issue line before the failure line for the same test.
+ *
+ * It also closes with a total, `Test run with N tests in M suites passed`, which is
+ * the count to trust: swift-testing runs its suites concurrently and writes each
+ * result line from the thread that produced it, so under load a line is sometimes
+ * never written at all. `reportApp` returns both counts so that the caller can report
+ * the difference between them.
+ */
 function reportApp(output) {
   const issues = new Map();
   let seen = 0;
@@ -59,10 +78,14 @@ function reportApp(output) {
       seen += 1;
     }
   }
-  return seen;
+  const total = output.match(/^[✔✘] Test run with (\d+) tests? in \d+ suites?/m);
+  return { seen, expected: total ? Number(total[1]) : undefined };
 }
 
-/** `node --test` emits TAP when piped: `ok N - name`, with a YAML block on failure. */
+/**
+ * `node --test` emits TAP when piped: `ok N - name`, with a YAML block on failure,
+ * and closes with a `# tests N` total to check the parsed count against.
+ */
 function reportRaycast(output) {
   const lines = output.split("\n");
   let seen = 0;
@@ -99,10 +122,19 @@ function reportRaycast(output) {
     fail("raycast", failed[1], [error, location].filter(Boolean).join("\n    ") || "No detail in the TAP output.");
     seen += 1;
   }
-  return seen;
+  const total = output.match(/^# tests (\d+)$/m);
+  return { seen, expected: total ? Number(total[1]) : undefined };
 }
 
 const unparsed = [];
+const short = [];
+
+/** Records a suite whose own total exceeds the number of lines parsed out of it. */
+function checkCount(part, { seen, expected }) {
+  if (expected !== undefined && seen < expected) {
+    short.push({ part, seen, expected });
+  }
+}
 
 const app = await run("xcodebuild", [
   "test",
@@ -113,14 +145,28 @@ const app = await run("xcodebuild", [
   "-destination",
   "platform=macOS",
 ]);
-if (reportApp(app.output) === 0 || (app.code !== 0 && failures.length === 0)) {
+const appCounts = reportApp(app.output);
+checkCount("app", appCounts);
+if (appCounts.seen === 0 || (app.code !== 0 && failures.length === 0)) {
   unparsed.push({ part: "app", output: app.output });
 }
 
 const raycast = await run("npm", ["test", "--prefix", "raycast"]);
 const raycastFailures = failures.length;
-if (reportRaycast(raycast.output) === 0 || (raycast.code !== 0 && failures.length === raycastFailures)) {
+const raycastCounts = reportRaycast(raycast.output);
+checkCount("raycast", raycastCounts);
+if (raycastCounts.seen === 0 || (raycast.code !== 0 && failures.length === raycastFailures)) {
   unparsed.push({ part: "raycast", output: raycast.output });
+}
+
+// A suite that ran more tests than it printed lines for. The missing lines never
+// reached this process, so `scripts/test.mjs` cannot recover them. It prints the size
+// of the shortfall instead.
+for (const { part, seen, expected } of short) {
+  console.log(
+    `\n${part} ran ${expected} tests but printed ${seen} lines. ` +
+      `${expected - seen} result line(s) were lost in its output, not skipped.`,
+  );
 }
 
 if (failures.length > 0) {

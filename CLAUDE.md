@@ -17,7 +17,7 @@ npm run raycast:dev        # install the extension into Raycast, then rebuild on
 ```
 
 `npm test` runs `scripts/test.mjs`, a harness over both suites rather than either suite's own runner.
-`scripts/test.mjs` prints one line per test and nothing else. Both suites
+`scripts/test.mjs` prints one line per test, and nothing else while every test passes and every line arrives. Both suites
 run even when the first one fails, and every failure is repeated at the end with its reason and its file and line.
 `app:test` and `raycast:test` run `xcodebuild` and `node --test` unfiltered, for when `scripts/test.mjs` hides
 something you need.
@@ -25,6 +25,16 @@ something you need.
 **`npm test` covers both suites, so `npm test` is the command to run before calling any change complete.** Run
 `npm test`, read what it prints, and treat a change as unfinished until every line is a tick. A passing `app:test`
 alone says nothing about the extension, and a passing `raycast:test` alone says nothing about the app.
+
+Each suite also prints its own total, and `scripts/test.mjs` checks the number of lines it parsed against that total.
+swift-testing runs its suites concurrently and writes each result line from the thread that produced it, so under
+load a `✔ Test ... passed` line is sometimes never written, and the list is short by one or two tests. When the count
+falls short, `scripts/test.mjs` prints how many result lines were lost. The count-short line reports lost output
+rather than skipped tests. Every test ran, and the suite's own exit code governs whether `npm test` passes.
+
+`scripts/test.mjs` buffers each child's stdout and stderr separately and joins them once the child has closed.
+Appending both to one string as the chunks arrive splices a line of one stream into a line of the other, because a
+chunk boundary is not a line boundary, and a spliced result line matches neither parser.
 
 `scripts/test.mjs` parses each suite's output separately, because swift-testing prints an issue line before the
 failure line for the same test, while `node --test` emits TAP once its output is a pipe rather than a terminal. A
