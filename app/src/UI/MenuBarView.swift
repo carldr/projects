@@ -41,9 +41,7 @@ struct MenuBarView: View {
       Divider()
 
       Button("Settings…") { showSettings() }
-        .keyboardShortcut(",")
       Button("Quit Projects") { NSApplication.shared.terminate(nil) }
-        .keyboardShortcut("q")
     }
     // The menu opening is the app's third chance to notice a space change,
     // alongside launch and activeSpaceDidChangeNotification.
