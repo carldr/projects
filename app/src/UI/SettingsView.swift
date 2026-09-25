@@ -4,30 +4,17 @@ import SwiftUI
 
 struct SettingsView: View {
   @Bindable var state: AppState
+  /// The uuid of the Space selected when the view opens.
+  let selectedSpace: String?
 
   var body: some View {
     TabView {
-      SpacesTab(state: state).tabItem { Label("Spaces", systemImage: "rectangle.3.group") }
+      SpacesTab(state: state, selection: selectedSpace)
+        .tabItem { Label("Spaces", systemImage: "rectangle.3.group") }
       ShortcutsTab(state: state).tabItem { Label("Shortcuts", systemImage: "keyboard") }
       GeneralTab(state: state).tabItem { Label("General", systemImage: "gear") }
     }
     .frame(width: 820, height: 480)
-    .background(JoinAllSpaces())
-    // Spaces may have been added, removed or switched since the last read.
-    .onAppear { state.refresh(announce: false) }
-  }
-}
-
-/// Makes the window that hosts this view follow the user across spaces.
-private struct JoinAllSpaces: NSViewRepresentable {
-  func makeNSView(context: Context) -> Marker { Marker() }
-  func updateNSView(_ view: Marker, context: Context) {}
-
-  final class Marker: NSView {
-    override func viewDidMoveToWindow() {
-      super.viewDidMoveToWindow()
-      window?.collectionBehavior.insert(.canJoinAllSpaces)
-    }
   }
 }
 
@@ -36,6 +23,11 @@ private struct JoinAllSpaces: NSViewRepresentable {
 private struct SpacesTab: View {
   @Bindable var state: AppState
   @State private var selection: String?  // space uuid
+
+  init(state: AppState, selection: String?) {
+    self.state = state
+    _selection = State(initialValue: selection)
+  }
 
   var body: some View {
     HSplitView {
@@ -184,7 +176,11 @@ private struct SpaceEditor: View {
       }
     }
     .formStyle(.grouped)
-    .onAppear(perform: seed)
+    .onAppear {
+      seed()
+      // Settings is opened to rename the current Space more often than for anything else.
+      focused = .name
+    }
     .onChange(of: space.uuid) { old, _ in
       commitText(to: old)
       seed()

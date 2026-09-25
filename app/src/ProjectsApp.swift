@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   @MainActor static private(set) var shared: AppDelegate?
 
   let state = AppState()
+  private(set) lazy var settings = SettingsWindow(state: state)
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     Self.shared = self
@@ -25,9 +26,5 @@ struct ProjectsApp: App {
       Text(delegate.state.menuTitle)
     }
     .menuBarExtraStyle(.menu)
-
-    Settings {
-      SettingsView(state: delegate.state)
-    }
   }
 }

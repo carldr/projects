@@ -2,7 +2,6 @@ import SwiftUI
 
 struct MenuBarView: View {
   @Bindable var state: AppState
-  @Environment(\.openSettings) private var openSettings
 
   var body: some View {
     Group {
@@ -40,7 +39,7 @@ struct MenuBarView: View {
 
       Divider()
 
-      Button("Settings…") { showSettings() }
+      Button("Settings…") { AppDelegate.shared?.settings.show() }
       Button("Quit Projects") { NSApplication.shared.terminate(nil) }
     }
     // The menu opening is the app's third chance to notice a space change,
@@ -57,10 +56,5 @@ struct MenuBarView: View {
     } else {
       button
     }
-  }
-
-  private func showSettings() {
-    NSApp.activate()
-    openSettings()
   }
 }
