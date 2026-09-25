@@ -68,11 +68,11 @@ The app switches Space by sending the keyboard shortcut macOS assigns to "Switch
 
 Those shortcuts are off by default. Enable them in System Settings > Keyboard > Keyboard Shortcuts > Mission Control. macOS lists one per Space that exists; desktops beyond 9 have no key assigned until you set one.
 
-The app reads the shortcuts from the system. The Shortcuts tab in Settings lists them and shows "Not set — switching will not work" for any Space without one. To give a Space a shortcut, tick that Space's "Switch to Desktop N" entry in the Mission Control list and assign a key.
+The app reads the shortcuts from the system. The Shortcuts pane in Settings lists every named project that has no Mission Control shortcut, with a button that opens System Settings, and the menu marks such a Space "No Shortcut". To give a Space a shortcut, tick that Space's "Switch to Desktop N" entry in the Mission Control list and assign a key.
 
 ## Going back
 
-Control+Option+Tab switches to the Space that was current before the current Space. A second press of Control+Option+Tab switches to the Space that was current before the first press. Settings > Previous project changes the shortcut. Menu > "Go to previous project" switches to the Space that was current before the current Space, and shows Control+Option+Tab in its right-hand column.
+Control+Option+Tab switches to the Space that was current before the current Space. A second press of Control+Option+Tab switches to the Space that was current before the first press. Settings > Shortcuts > Previous Project changes the Go to Previous Project shortcut. Menu > "Go to Previous Project" switches to the Space that was current before the current Space, and shows Control+Option+Tab in its right-hand column.
 
 At launch the app holds no previous Space, a press of Control+Option+Tab does nothing, and the menu item is greyed out. The app records the previous Space the first time the current Space changes. The app records the previous Space whether the change comes from the menu, from a shortcut, from Raycast or from Mission Control. The app discards the previous Space when it quits.
 
@@ -82,20 +82,23 @@ The app registers Control+Option+Tab system-wide. Chrome and other apps cycle ta
 
 ## Setting up a Space
 
-Open Settings from the menu, or with the Projects Settings command in Raycast. Settings opens on the Spaces tab, with the current Space selected and its Name field ready to type into. The Spaces tab lists every Space; click one to edit it. While Settings is open, Projects shows a Dock icon and its own menus in the menu bar.
+Menu > "Rename Project…" names the project on the current Space without opening Settings.
+
+Open Settings from the menu, with Command+comma while the menu is open, or with the Projects Settings command in Raycast. Settings opens on the Projects pane, with the current Space selected and its Name field ready to type into. The Projects pane lists every Space, with unnamed Spaces dimmed; click one to edit it. While Settings is open, Projects shows a Dock icon and its own menus in the menu bar.
 
 - Name: shown in the menu bar and the overlay. Left blank, the Space shows as "Desktop N".
-- "Open iTerm2 windows" shows a directory field (blank means your home folder), a "Save current windows" button, the count of saved windows, and "Forget".
-- "Open Chrome window" shows a list of URLs with add, remove and reorder. URLs must start with `http://` or `https://`.
+- "When Opening Project Windows" > "iTerm2 windows" shows a folder field (blank means your home folder), the saved layout's window count, a "Save Current Windows" button and "Clear".
+- "When Opening Project Windows" > "Chrome window" shows a list of URLs with add, remove and reorder. URLs must start with `http://` or `https://`.
 
-Menu > "Save iTerm2 windows" records the position of every iTerm2 window on the current Space. It is enabled only when "Open iTerm2 windows" is on for that Space.
+Menu > "Save iTerm2 Window Layout" records the position of every iTerm2 window on the current Space. "Save iTerm2 Window Layout" is enabled only when "iTerm2 windows" is on for that Space.
 
-Menu > "Open space setup", or Control+Shift+= from anywhere, opens the saved iTerm2 windows in the directory and a Chrome window with the URLs. Opening the space setup again opens only what is missing. Control+Shift+= can be changed in Settings > Shortcuts.
+Menu > "Open Project Windows", or Control+Shift+= from anywhere, opens the Space's saved iTerm2 windows in the Space's iTerm2 folder, and a Chrome window with the Space's Chrome URLs. Choosing "Open Project Windows" again opens only the iTerm2 windows and the Chrome window that are not already open. Control+Shift+= can be changed in Settings > Shortcuts.
 
 ## General settings
 
-- Overlay duration slider, 0.3 to 5 seconds.
-- Launch at login, on by default.
+- "Show project name for": how long the overlay stays, 0.3 to 5 seconds.
+- Open at Login, on by default.
+- Accessibility: whether the permission is granted, rechecked each time Projects comes to the front.
 
 ## Raycast extension
 
