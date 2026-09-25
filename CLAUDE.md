@@ -55,8 +55,9 @@ xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'p
 `app/` is a menu bar app with no Dock icon and no main window. It names macOS Spaces and, for each Space, reopens
 saved iTerm2 window layouts and a Chrome window of URLs.
 
-`raycast/` is a Raycast extension holding two commands. Switch Project lists the named Spaces and switches to the one
-you pick. Go To Previous Project switches to the Space that was current before the current Space.
+`raycast/` is a Raycast extension holding three commands. Switch Project lists the named Spaces and switches to the one
+you pick. Go To Previous Project switches to the Space that was current before the current Space. Projects Settings
+opens the app's Settings window at the current Space.
 
 README.md covers the user-facing behaviour and the macOS permissions. Read README.md before changing behaviour.
 
@@ -89,14 +90,14 @@ degree, not by command:
 
 - `src/spaces.ts` — filtering, sorting and sectioning, as pure functions over plain data. Covered by tests.
 - `src/projects.ts` — the calls into the app, and the mapping from a failure to a message a person can act on.
-- `src/switch-project.tsx` and `src/previous-project.ts` — the command entry points. Raycast ships no headless
-  harness, so logic placed in `switch-project.tsx` or `previous-project.ts` cannot be tested. Put logic in `spaces.ts`
-  or `projects.ts`.
+- `src/switch-project.tsx`, `src/previous-project.ts` and `src/projects-settings.ts` — the command entry points.
+  Raycast ships no headless harness, so logic placed in a command entry point cannot be tested. Put logic in
+  `spaces.ts` or `projects.ts`.
 
 ## How the two connect
 
-`app/src/Scripting/` makes the app AppleScript-scriptable. `Projects.sdef` declares four commands — `list spaces`,
-`switch to space`, `switch to previous space` and `open space setup for` — and the extension calls them through
+`app/src/Scripting/` makes the app AppleScript-scriptable. `Projects.sdef` declares five commands — `list spaces`,
+`switch to space`, `switch to previous space`, `open space setup for` and `open settings` — and the extension calls them through
 `osascript` in JXA mode, which returns the results as JSON.
 
 The app answers every query from live state rather than from a cache, so the extension keeps none. Cocoa Scripting

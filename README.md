@@ -81,7 +81,7 @@ The app registers Control+Option+Tab system-wide. Chrome and other apps cycle ta
 
 ## Setting up a Space
 
-Open Settings from the menu, or press Command+comma while the menu is open. The Spaces tab lists every Space; click one to edit it.
+Open Settings from the menu, or with the Projects Settings command in Raycast. Settings opens on the Spaces tab, with the current Space selected and its Name field ready to type into. The Spaces tab lists every Space; click one to edit it. While Settings is open, Projects shows a Dock icon and its own menus in the menu bar.
 
 - Name: shown in the menu bar and the overlay. Left blank, the Space shows as "Desktop N".
 - "Open iTerm2 windows" shows a directory field (blank means your home folder), a "Save current windows" button, the count of saved windows, and "Forget".
@@ -98,7 +98,7 @@ Menu > "Open space setup", or Control+Shift+= from anywhere, opens the saved iTe
 
 ## Raycast extension
 
-`raycast/` holds a Raycast extension with two commands, which switch Space without opening the Projects menu bar menu.
+`raycast/` holds a Raycast extension with three commands, which switch Space or open Settings without opening the Projects menu bar menu.
 
 Switch Project lists your named Spaces. Type part of a Space's name and press Enter to switch to that Space.
 Command+Enter switches and opens that Space's setup as well.
@@ -110,6 +110,9 @@ pressing Enter on that Space opens the System Settings pane where you assign the
 
 Go To Previous Project shows no list and switches to the Space that was current before the current Space. With a short
 alias set in Raycast's settings, Command+Space, that alias and Enter run Go To Previous Project.
+
+Projects Settings shows no list and opens the Projects Settings window at the current Space, with its Name field ready
+to type into.
 
 The extension reads its list from Projects itself over AppleScript, so Projects must be running. The first time the extension asks
 Projects for the list, macOS raises an Automation prompt asking whether Raycast may control Projects. Grant the
@@ -126,7 +129,7 @@ change.
 npm install
 ```
 
-`npm run raycast:dev` puts both commands into Raycast and rebuilds them on every save.
+`npm run raycast:dev` puts the three commands into Raycast and rebuilds them on every save.
 
 ```sh
 npm run raycast:dev
@@ -135,7 +138,7 @@ npm run raycast:dev
 Raycast loads a rebuilt command the next time you open that command. Leave `npm run raycast:dev` running while you
 work on the extension, and stop `npm run raycast:dev` with Control+C when you have finished.
 
-The commands appear in Raycast as "Switch Project" and "Go To Previous Project" while `npm run raycast:dev` runs, and
+The commands appear in Raycast as "Switch Project", "Go To Previous Project" and "Projects Settings" while `npm run raycast:dev` runs, and
 remain installed after `npm run raycast:dev` stops. To reach a command by typing a letter or two, open Raycast's
 settings, find the command under Extensions, and set an alias. Aliases are stored in your Raycast settings and are not
 part of the extension.
