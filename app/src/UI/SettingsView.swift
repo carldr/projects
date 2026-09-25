@@ -179,7 +179,9 @@ private struct ProjectEditor: View {
             }
           }
           HStack {
-            TextField("URL", text: $newURL, prompt: Text("https://example.com"))
+            // Verbatim: a string literal is parsed as Markdown, which turns the URL
+            // into a link drawn in the link colour instead of the placeholder colour.
+            TextField("URL", text: $newURL, prompt: Text(verbatim: "https://example.com"))
               .labelsHidden()
               .textFieldStyle(.roundedBorder)
               .onSubmit(addURL)
