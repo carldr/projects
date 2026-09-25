@@ -10,7 +10,7 @@ a dependency's own dependencies, so a type the extension compiles against, such 
 `@raycast/api`, must be declared in `raycast/package.json`.
 
 ```sh
-ppnpm test               # both suites
+pnpm test               # both suites
 pnpm app:test           # the Swift suite alone
 pnpm app:build          # build the app without running tests
 pnpm raycast:test       # the extension's Node suite alone

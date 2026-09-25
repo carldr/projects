@@ -45,7 +45,7 @@ Sources are in `app/src/`, tests in `app/tests/`. The Raycast extension is in `r
 Run the app's tests with Product > Test in Xcode. The root `package.json` runs the app and the extension from the command line. The root `package.json` declares no dependencies, so the root needs no `pnpm install`.
 
 ```sh
-ppnpm test               # both suites
+pnpm test               # both suites
 pnpm app:test           # the app's suite alone
 pnpm app:build          # build the app without running its tests
 pnpm raycast:test       # the extension's suite alone
