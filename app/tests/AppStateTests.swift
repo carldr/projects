@@ -91,7 +91,15 @@ struct AppStateTests {
     state.refresh(announce: false)
     #expect(state.snapshot.spaces.count == 2)
     #expect(state.currentSpace?.number == 2)
-    #expect(state.menuTitle == "2 Desktop 2")
+    #expect(state.menuTitle == "Desktop 2")
+  }
+
+  @Test func titleNumbersANamedSpaceButNotAnUnnamedOne() {
+    let state = makeState(FakeProvider(Self.displays(["a", "b"], current: "b")))
+    state.refresh(announce: false)
+    state.projects.add(Project(name: "Website", directory: "/tmp", spaceUUID: "b"))
+    #expect(state.title(for: state.snapshot.spaces[0]) == "Desktop 1")
+    #expect(state.title(for: state.snapshot.spaces[1]) == "2 Website")
   }
 
   @Test func titleUsesAssignedProjectName() {
@@ -100,6 +108,34 @@ struct AppStateTests {
     state.projects.add(Project(name: "Website", directory: "/tmp", spaceUUID: "b"))
     #expect(state.menuTitle == "2 Website")
     #expect(state.currentProject?.name == "Website")
+  }
+
+  @Test func renamingTheCurrentProjectNamesTheCurrentSpace() {
+    let state = makeState(FakeProvider(Self.displays(["a", "b"], current: "b")))
+    state.refresh(announce: false)
+    state.renameCurrentProject(to: "Website")
+    #expect(state.menuTitle == "2 Website")
+    #expect(state.title(for: state.snapshot.spaces[0]) == "Desktop 1")
+  }
+
+  @Test func renamingKeepsTheRestOfTheProject() {
+    let state = makeState(FakeProvider(Self.displays(["a"], current: "a")))
+    state.refresh(announce: false)
+    state.projects.add(Project(name: "Old", directory: "/tmp/site", spaceUUID: "a"))
+    state.renameCurrentProject(to: "New")
+    #expect(state.currentProject?.name == "New")
+    #expect(state.currentProject?.directory == "/tmp/site")
+  }
+
+  @Test func onlyNamedProjectsWithoutAShortcutNeedOne() {
+    let combo = KeyCombo(keyCode: 18)
+    let state = makeState(
+      FakeProvider(Self.displays(["a", "b", "c", "d"], current: "a")), shortcuts: [1: combo, 2: combo])
+    state.refresh(announce: false)
+    state.projects.add(Project(name: "Has shortcut", directory: "", spaceUUID: "a"))
+    state.projects.add(Project(name: "Needs one", directory: "", spaceUUID: "c"))
+    // "b" has a shortcut and no name; "d" has neither, but is unnamed, so is not listed.
+    #expect(state.projectsWithoutShortcut.map(\.uuid) == ["c"])
   }
 
   @Test func titleWhenCurrentIsNotADesktop() {

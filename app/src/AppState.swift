@@ -107,9 +107,16 @@ final class AppState {
     return "Desktop \(space.number)"
   }
 
+  /// How a Space is listed: a named Space leads with its number, and an unnamed one
+  /// shows "Desktop N" alone rather than repeating the number.
+  func title(for space: Space) -> String {
+    if let name = project(for: space)?.name, !name.isEmpty { return "\(space.number) \(name)" }
+    return displayName(for: space)
+  }
+
   var menuTitle: String {
     guard let space = currentSpace else { return "–" }
-    return "\(space.number) \(displayName(for: space))"
+    return title(for: space)
   }
 
   func refresh(announce: Bool) {
@@ -144,6 +151,14 @@ final class AppState {
   }
 
   func shortcut(for space: Space) -> KeyCombo? { missionControlShortcuts[space.number] }
+
+  /// Named Spaces with no Mission Control shortcut, which cannot be switched to.
+  /// Unnamed Spaces are left out: nothing in the app refers to them.
+  var projectsWithoutShortcut: [Space] {
+    snapshot.spaces.filter { space in
+      shortcut(for: space) == nil && !(project(for: space)?.name.isEmpty ?? true)
+    }
+  }
 
   func switchTo(_ space: Space) {
     guard let combo = shortcut(for: space) else {
@@ -199,6 +214,14 @@ final class AppState {
     } else {
       projects.add(project)
     }
+  }
+
+  /// Names the project on the current Space, creating its record on first use.
+  func renameCurrentProject(to name: String) {
+    guard let space = currentSpace else { return }
+    var project = configuration(for: space)
+    project.name = name
+    update(project)
   }
 
   static func plan(for project: Project, existingTerminals: Int, existingChromeWindows: Int) -> OpenProjectPlan {
