@@ -4,34 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-README.md documents these scripts for a person setting the repository up. `raycast/` is an npm workspace of the root
-package, so `npm install` at the root installs the extension's dependencies.
+README.md documents these scripts for a person setting the repository up. `raycast/` is a pnpm workspace package
+(`pnpm-workspace.yaml`), so `pnpm install` at the root installs the extension's dependencies. pnpm does not hoist
+a dependency's own dependencies, so a type the extension compiles against, such as `@types/react` from
+`@raycast/api`, must be declared in `raycast/package.json`.
 
 ```sh
-npm test                   # both suites
-npm run app:test           # the Swift suite alone
-npm run app:build          # build the app without running tests
-npm run raycast:test       # the extension's Node suite alone
-npm run raycast:typecheck  # tsc over the extension
-npm run raycast:dev        # install the extension into Raycast, then rebuild on every save
+ppnpm test               # both suites
+pnpm app:test           # the Swift suite alone
+pnpm app:build          # build the app without running tests
+pnpm raycast:test       # the extension's Node suite alone
+pnpm raycast:typecheck  # tsc over the extension
+pnpm raycast:dev        # install the extension into Raycast, then rebuild on every save
 ```
 
-`npm test` runs `scripts/test.mjs`, a harness over both suites rather than either suite's own runner.
+`pnpm test` runs `scripts/test.mjs`, a harness over both suites rather than either suite's own runner.
 `scripts/test.mjs` prints one line per test, then a summary line counting the tests, the failures, and each suite's
 share of the tests. Both suites
 run even when the first one fails, and every failure is repeated at the end with its reason and its file and line.
 `app:test` and `raycast:test` run `xcodebuild` and `node --test` unfiltered, for when `scripts/test.mjs` hides
 something you need.
 
-**`npm test` covers both suites, so `npm test` is the command to run before calling any change complete.** Run
-`npm test`, read what it prints, and treat a change as unfinished until every line is a tick. A passing `app:test`
+**`pnpm test` covers both suites, so `pnpm test` is the command to run before calling any change complete.** Run
+`pnpm test`, read what it prints, and treat a change as unfinished until every line is a tick. A passing `app:test`
 alone says nothing about the extension, and a passing `raycast:test` alone says nothing about the app.
 
 Each suite also prints its own total, and `scripts/test.mjs` checks the number of lines it parsed against that total.
 swift-testing runs its suites concurrently and writes each result line from the thread that produced it, so under
 load a `✔ Test ... passed` line is sometimes never written, and the list is short by one or two tests. When the count
 falls short, `scripts/test.mjs` prints how many result lines were lost. The count-short line reports lost output
-rather than skipped tests. Every test ran, and the suite's own exit code governs whether `npm test` passes.
+rather than skipped tests. Every test ran, and the suite's own exit code governs whether `pnpm test` passes.
 
 `scripts/test.mjs` buffers each child's stdout and stderr separately and joins them once the child has closed.
 Appending both to one string as the chunks arrive splices a line of one stream into a line of the other, because a

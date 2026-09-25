@@ -151,7 +151,7 @@ if (appCounts.seen === 0 || (app.code !== 0 && failures.length === 0)) {
   unparsed.push({ part: "app", output: app.output });
 }
 
-const raycast = await run("npm", ["test", "--prefix", "raycast"]);
+const raycast = await run("pnpm", ["--dir", "raycast", "test"]);
 const raycastFailures = failures.length;
 const raycastCounts = reportRaycast(raycast.output);
 checkCount("raycast", raycastCounts);

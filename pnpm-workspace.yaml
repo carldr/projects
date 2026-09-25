@@ -1,0 +1,4 @@
+packages:
+  - raycast
+allowBuilds:
+  esbuild: true

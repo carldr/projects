@@ -2,13 +2,13 @@
   "name": "projects",
   "private": true,
   "description": "Task runner for the whole repository: the macOS app in app/ and the Raycast extension in raycast/",
-  "workspaces": ["raycast"],
+  "packageManager": "pnpm@11.5.1",
   "scripts": {
     "test": "node scripts/test.mjs",
     "app:test": "xcodebuild test -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
     "app:build": "xcodebuild build -quiet -project app/Projects.xcodeproj -scheme Projects -destination 'platform=macOS'",
-    "raycast:test": "npm test --prefix raycast",
-    "raycast:typecheck": "npx --prefix raycast --no-install tsc --noEmit --project raycast",
-    "raycast:dev": "npm run dev --prefix raycast"
+    "raycast:test": "pnpm --dir raycast test",
+    "raycast:typecheck": "pnpm --dir raycast exec tsc --noEmit",
+    "raycast:dev": "pnpm --dir raycast dev"
   }
 }

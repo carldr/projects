@@ -28,6 +28,7 @@ The repository also holds a Raycast extension, which lists your projects, filter
 - macOS 14 Sonoma or later, with "Displays have separate Spaces" turned off in System Settings > Desktop & Dock. The app reads the Spaces of the first display only, so with "Displays have separate Spaces" on, the other displays' Spaces are misreported.
 - Xcode 26 or later to build.
 - iTerm2 and Google Chrome, for the window features.
+- Node.js and pnpm, for the Raycast extension and the command-line scripts.
 
 Spaces are created in Mission Control (Control+Up, then the + at the top right). macOS numbers them left to right.
 
@@ -41,18 +42,18 @@ A Run build is enough to keep using the app. Archive only to install a copy outs
 
 Sources are in `app/src/`, tests in `app/tests/`. The Raycast extension is in `raycast/`, with its own sources and tests.
 
-Run the app's tests with Product > Test in Xcode. The root `package.json` runs the app and the extension from the command line. The root `package.json` declares no dependencies, so the root needs no `npm install`.
+Run the app's tests with Product > Test in Xcode. The root `package.json` runs the app and the extension from the command line. The root `package.json` declares no dependencies, so the root needs no `pnpm install`.
 
 ```sh
-npm test                   # both suites
-npm run app:test           # the app's suite alone
-npm run app:build          # build the app without running its tests
-npm run raycast:test       # the extension's suite alone
-npm run raycast:typecheck  # TypeScript over the extension
-npm run raycast:dev        # install the extension into Raycast and rebuild on every save
+ppnpm test               # both suites
+pnpm app:test           # the app's suite alone
+pnpm app:build          # build the app without running its tests
+pnpm raycast:test       # the extension's suite alone
+pnpm raycast:typecheck  # TypeScript over the extension
+pnpm raycast:dev        # install the extension into Raycast and rebuild on every save
 ```
 
-`npm test` runs `scripts/test.mjs`, a harness over both suites, rather than either suite's own runner. `scripts/test.mjs` prints one line per test and nothing else, runs both suites even when the first suite fails, and repeats every failure at the end with its reason and the file and line it came from.
+`pnpm test` runs `scripts/test.mjs`, a harness over both suites, rather than either suite's own runner. `scripts/test.mjs` prints one line per test and nothing else, runs both suites even when the first suite fails, and repeats every failure at the end with its reason and the file and line it came from.
 
 ## Permissions
 
@@ -122,24 +123,24 @@ the permission. Grant it again in System Settings > Privacy & Security > Automat
 The extension is not in the Raycast Store, so you install the extension from source. Both shell commands below run
 from the root of the repository.
 
-`npm install` fetches the extension's dependencies. Run `npm install` once, and again whenever those dependencies
+`pnpm install` fetches the extension's dependencies. Run `pnpm install` once, and again whenever those dependencies
 change.
 
 ```sh
-npm install
+pnpm install
 ```
 
-`npm run raycast:dev` puts the three commands into Raycast and rebuilds them on every save.
+`pnpm raycast:dev` puts the three commands into Raycast and rebuilds them on every save.
 
 ```sh
-npm run raycast:dev
+pnpm raycast:dev
 ```
 
-Raycast loads a rebuilt command the next time you open that command. Leave `npm run raycast:dev` running while you
-work on the extension, and stop `npm run raycast:dev` with Control+C when you have finished.
+Raycast loads a rebuilt command the next time you open that command. Leave `pnpm raycast:dev` running while you
+work on the extension, and stop `pnpm raycast:dev` with Control+C when you have finished.
 
-The commands appear in Raycast as "Switch Project", "Go To Previous Project" and "Projects Settings" while `npm run raycast:dev` runs, and
-remain installed after `npm run raycast:dev` stops. To reach a command by typing a letter or two, open Raycast's
+The commands appear in Raycast as "Switch Project", "Go To Previous Project" and "Projects Settings" while `pnpm raycast:dev` runs, and
+remain installed after `pnpm raycast:dev` stops. To reach a command by typing a letter or two, open Raycast's
 settings, find the command under Extensions, and set an alias. Aliases are stored in your Raycast settings and are not
 part of the extension.
 
