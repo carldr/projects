@@ -9,9 +9,15 @@ import SwiftUI
 /// its window is key. The app therefore becomes a regular app while the window is
 /// open, which also gives it a Dock icon for that time, and goes back when it closes.
 @MainActor
+@Observable
 final class SettingsWindow: NSObject, NSWindowDelegate {
-  private let state: AppState
-  private lazy var window: NSWindow = {
+  /// True from `show()` until the window closes. The menu bar menu shows ⌘Q on its
+  /// Quit item only while this is true, because only then does the app have a menu
+  /// bar of its own to take the shortcut.
+  private(set) var isOpen = false
+
+  @ObservationIgnored private let state: AppState
+  @ObservationIgnored private lazy var window: NSWindow = {
     let window = NSWindow(
       contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: true)
     window.title = "Projects Settings"
@@ -28,6 +34,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
   func windowWillClose(_ notification: Notification) {
     NSApp.setActivationPolicy(.accessory)
+    isOpen = false
   }
 
   /// Shows the window on the Spaces tab with the current Space selected. The view is
@@ -38,6 +45,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
       rootView: SettingsView(state: state, selectedSpace: state.currentSpace?.uuid))
     if !window.isVisible { window.center() }
     NSApp.setActivationPolicy(.regular)
+    isOpen = true
     NSApp.activate()
     window.makeKeyAndOrderFront(nil)
   }

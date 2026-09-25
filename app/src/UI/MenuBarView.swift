@@ -40,7 +40,7 @@ struct MenuBarView: View {
       Divider()
 
       Button("Settings…") { AppDelegate.shared?.settings.show() }
-      Button("Quit Projects") { NSApplication.shared.terminate(nil) }
+      quitItem
     }
     // The menu opening is the app's third chance to notice a space change,
     // alongside launch and activeSpaceDidChangeNotification.
@@ -53,6 +53,15 @@ struct MenuBarView: View {
     let combo = state.shortcuts.previousProject
     if let key = combo.keyEquivalent {
       button.keyboardShortcut(key, modifiers: combo.eventModifiers)
+    } else {
+      button
+    }
+  }
+
+  @ViewBuilder private var quitItem: some View {
+    let button = Button("Quit Projects") { NSApplication.shared.terminate(nil) }
+    if AppDelegate.shared?.settings.isOpen == true {
+      button.keyboardShortcut("q")
     } else {
       button
     }
