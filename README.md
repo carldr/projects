@@ -82,9 +82,7 @@ The app registers Control+Option+Tab system-wide. Chrome and other apps cycle ta
 
 ## Setting up a Space
 
-Menu > "Rename Project…" names the project on the current Space without opening Settings.
-
-Open Settings from the menu, with Command+comma while the menu is open, or with the Projects Settings command in Raycast. Settings opens on the Projects pane, with the current Space selected and its Name field ready to type into. The Projects pane lists every Space, with unnamed Spaces dimmed; click one to edit it. While Settings is open, Projects shows a Dock icon and its own menus in the menu bar.
+Open Settings from the menu, with Command+comma while the menu is open, or with the Projects Settings command in Raycast. Settings opens on the Projects pane, with the current Space selected and its Name field ready to type into. The Projects pane lists every Space, with unnamed Spaces dimmed; click one to edit it. Command+Return in the Projects pane saves the Name and Folder fields and closes Settings. While Settings is open, Projects shows a Dock icon and its own menus in the menu bar.
 
 - Name: shown in the menu bar and the overlay. Left blank, the Space shows as "Desktop N".
 - "When Opening Project Windows" > "iTerm2 windows" shows a folder field (blank means your home folder), the saved layout's window count, a "Save Current Windows" button and "Clear".
