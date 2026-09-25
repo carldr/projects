@@ -41,8 +41,14 @@ export async function switchToPreviousSpace(): Promise<void> {
   await jxa(commandSource("switchToPreviousSpace"));
 }
 
+/**
+ * Projects cannot bring its own window forward from a script command: macOS activates
+ * an app only when another app yields to it. Asking Projects to activate is that
+ * yield, so the Settings window takes focus.
+ */
 export async function openSettings(): Promise<void> {
   await jxa(commandSource("openSettings"));
+  await jxa(commandSource("activate"));
 }
 
 /** Turns osascript's failures into something a Raycast toast can usefully say. */
