@@ -81,9 +81,13 @@ private struct ProjectEditor: View {
   var body: some View {
     Form {
       // A blank name shows as "Desktop N", so the prompt says so.
-      TextField("Name", text: $name, prompt: Text("Desktop \(space.number)"))
-        .focused($focused, equals: .name)
-        .onSubmit(commitText)
+      LabeledContent("Name") {
+        TextField("Name", text: $name, prompt: Text("Desktop \(space.number)"))
+          .labelsHidden()
+          .textFieldStyle(.roundedBorder)
+          .focused($focused, equals: .name)
+          .onSubmit(commitText)
+      }
 
       Section("When Opening Project Windows") {
         Toggle(
@@ -100,8 +104,12 @@ private struct ProjectEditor: View {
 
       if project.openTerminals {
         Section("iTerm2") {
-          HStack {
+          LabeledContent("Folder") {
+            // A bordered field, so the path reads as something to type into; Choose…
+            // is the alternative for the pointer.
             TextField("Folder", text: $folder, prompt: Text("Home folder"))
+              .labelsHidden()
+              .textFieldStyle(.roundedBorder)
               .focused($focused, equals: .folder)
               .onSubmit(commitText)
             Button("Choose…") {
@@ -172,6 +180,8 @@ private struct ProjectEditor: View {
           }
           HStack {
             TextField("URL", text: $newURL, prompt: Text("https://example.com"))
+              .labelsHidden()
+              .textFieldStyle(.roundedBorder)
               .onSubmit(addURL)
             Button("Add", action: addURL)
               .disabled(!Self.isValidURL(newURL))
@@ -180,6 +190,18 @@ private struct ProjectEditor: View {
       }
     }
     .formStyle(.grouped)
+    // Command-Return saves the fields being edited and closes Settings, so a Space
+    // can be reconfigured without leaving the keyboard. The button is invisible:
+    // it exists to carry the shortcut.
+    .background {
+      Button("Save and Close") {
+        commitText()
+        AppDelegate.shared?.settings.close()
+      }
+      .keyboardShortcut(.return, modifiers: .command)
+      .opacity(0)
+      .accessibilityHidden(true)
+    }
     .onAppear {
       seed()
       // Settings is opened to rename the current Space more often than for anything else.

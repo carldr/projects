@@ -60,6 +60,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     AnyView(ProjectsPane(state: state, selection: selection).id(UUID()))
   }
 
+  func close() {
+    window.close()
+  }
+
   func windowWillClose(_ notification: Notification) {
     NSApp.setActivationPolicy(.accessory)
   }
