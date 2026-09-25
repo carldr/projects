@@ -216,14 +216,6 @@ final class AppState {
     }
   }
 
-  /// Names the project on the current Space, creating its record on first use.
-  func renameCurrentProject(to name: String) {
-    guard let space = currentSpace else { return }
-    var project = configuration(for: space)
-    project.name = name
-    update(project)
-  }
-
   static func plan(for project: Project, existingTerminals: Int, existingChromeWindows: Int) -> OpenProjectPlan {
     OpenProjectPlan(
       terminals: project.openTerminals

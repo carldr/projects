@@ -36,8 +36,6 @@ struct MenuBarView: View {
         .disabled(!state.canOpenCurrentSpace)
       Button("Save iTerm2 Window Layout") { state.saveTerminalWindows() }
         .disabled(!state.canSaveCurrentSpace)
-      Button("Rename Project…") { AppDelegate.shared?.rename.show() }
-        .disabled(state.currentSpace == nil)
 
       Divider()
 

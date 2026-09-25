@@ -8,27 +8,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   let state = AppState()
   private(set) lazy var settings = SettingsWindow(state: state)
-  private(set) lazy var rename = RenameWindow(state: state)
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     Self.shared = self
     state.start()
   }
 
-  /// The Dock icon exists only while Settings is open; its menu offers the two
-  /// actions on the current project.
+  /// The Dock icon exists only while Settings is open; its menu opens the current
+  /// project's windows.
   func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
     let menu = NSMenu()
-    let rename = NSMenuItem(title: "Rename Project…", action: #selector(renameProject), keyEquivalent: "")
     let open = NSMenuItem(title: "Open Project Windows", action: #selector(openProjectWindows), keyEquivalent: "")
-    for item in [rename, open] {
-      item.target = self
-      menu.addItem(item)
-    }
+    open.target = self
+    menu.addItem(open)
     return menu
   }
 
-  @objc private func renameProject() { rename.show() }
   @objc private func openProjectWindows() { state.openSpaceSetup() }
 }
 

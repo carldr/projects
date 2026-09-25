@@ -110,23 +110,6 @@ struct AppStateTests {
     #expect(state.currentProject?.name == "Website")
   }
 
-  @Test func renamingTheCurrentProjectNamesTheCurrentSpace() {
-    let state = makeState(FakeProvider(Self.displays(["a", "b"], current: "b")))
-    state.refresh(announce: false)
-    state.renameCurrentProject(to: "Website")
-    #expect(state.menuTitle == "2 Website")
-    #expect(state.title(for: state.snapshot.spaces[0]) == "Desktop 1")
-  }
-
-  @Test func renamingKeepsTheRestOfTheProject() {
-    let state = makeState(FakeProvider(Self.displays(["a"], current: "a")))
-    state.refresh(announce: false)
-    state.projects.add(Project(name: "Old", directory: "/tmp/site", spaceUUID: "a"))
-    state.renameCurrentProject(to: "New")
-    #expect(state.currentProject?.name == "New")
-    #expect(state.currentProject?.directory == "/tmp/site")
-  }
-
   @Test func onlyNamedProjectsWithoutAShortcutNeedOne() {
     let combo = KeyCombo(keyCode: 18)
     let state = makeState(
