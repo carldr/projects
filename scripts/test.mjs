@@ -3,8 +3,8 @@
 // anything failed. Nothing else reaches stdout.
 //
 // Each suite reports in its own format, so each needs its own parser: the Swift
-// suite streams swift-testing lines, and `node --test` emits TAP once its output is
-// a pipe rather than a terminal. When a suite exits non-zero and no failing test was
+// suite streams swift-testing lines, and `node --test` is run with its TAP reporter.
+// When a suite exits non-zero and no failing test was
 // parsed out of it — a build error, or a crash partway through — its whole log is
 // printed, so a failure is never reduced to silence.
 
@@ -33,9 +33,9 @@ function fail(part, name, detail) {
 // and that test vanishes from the report. When the spliced line is a failure, the run
 // ends with nothing in the Failures block, and only the suite's own non-zero exit code
 // reports the failure.
-function run(command, args) {
+function run(command, args, env = {}) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, ...env } });
     let out = "";
     let err = "";
     child.stdout.on("data", (d) => (out += d));
@@ -83,7 +83,7 @@ function reportApp(output) {
 }
 
 /**
- * `node --test` emits TAP when piped: `ok N - name`, with a YAML block on failure,
+ * `node --test` emits TAP under `--test-reporter=tap`: `ok N - name`, with a YAML block on failure,
  * and closes with a `# tests N` total to check the parsed count against.
  */
 function reportRaycast(output) {
@@ -151,7 +151,10 @@ if (appCounts.seen === 0 || (app.code !== 0 && failures.length === 0)) {
   unparsed.push({ part: "app", output: app.output });
 }
 
-const raycast = await run("pnpm", ["--dir", "raycast", "test"]);
+// TAP is asked for rather than assumed: Node 26 prints its spec format even to a pipe.
+// The reporter goes through NODE_OPTIONS because pnpm puts any extra argument after the
+// test file patterns, where `node --test` ignores it.
+const raycast = await run("pnpm", ["--dir", "raycast", "test"], { NODE_OPTIONS: "--test-reporter=tap" });
 const raycastFailures = failures.length;
 const raycastCounts = reportRaycast(raycast.output);
 checkCount("raycast", raycastCounts);
