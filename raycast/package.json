@@ -18,6 +18,12 @@
       "title": "Go To Previous Project",
       "description": "Switch back to the project you were on before this one",
       "mode": "no-view"
+    },
+    {
+      "name": "projects-settings",
+      "title": "Projects Settings",
+      "description": "Open the Projects Settings window at the current project",
+      "mode": "no-view"
     }
   ],
   "dependencies": {

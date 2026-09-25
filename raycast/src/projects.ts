@@ -41,6 +41,10 @@ export async function switchToPreviousSpace(): Promise<void> {
   await jxa(commandSource("switchToPreviousSpace"));
 }
 
+export async function openSettings(): Promise<void> {
+  await jxa(commandSource("openSettings"));
+}
+
 /** Turns osascript's failures into something a Raycast toast can usefully say. */
 export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);

@@ -48,5 +48,9 @@
       <direct-parameter type="text" description="The Space id, from list spaces."/>
     </command>
 
+    <command name="open settings" code="PrjsSetS" description="Open the Settings window at the current Space.">
+      <cocoa class="OpenSettingsCommand"/>
+    </command>
+
   </suite>
 </dictionary>

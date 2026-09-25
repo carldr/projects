@@ -124,3 +124,18 @@ final class OpenSpaceSetupCommand: NSScriptCommand {
     return nil
   }
 }
+
+/// Opens the Settings window at the current Space.
+@objc(OpenSettingsCommand)
+final class OpenSettingsCommand: NSScriptCommand {
+  override func performDefaultImplementation() -> Any? {
+    MainActor.assumeIsolated {
+      guard let settings = AppDelegate.shared?.settings else {
+        reportNotReady()
+        return nil
+      }
+      settings.show()
+      return nil
+    }
+  }
+}
