@@ -35,6 +35,11 @@ struct ProjectsPane: View {
     }
     .padding()
     .frame(width: 820, height: 480)
+    // The window follows the user across Spaces, so the selection follows too. A
+    // full-screen Space is not in the list, and leaves the selection where it was.
+    .onChange(of: state.snapshot.currentUUID) { _, current in
+      if state.snapshot.spaces.contains(where: { $0.uuid == current }) { selection = current }
+    }
   }
 }
 
