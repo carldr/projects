@@ -2,25 +2,12 @@ import AppKit
 import ServiceManagement
 import SwiftUI
 
-struct SettingsView: View {
-  @Bindable var state: AppState
-  /// The uuid of the Space selected when the view opens.
-  let selectedSpace: String?
+// The three panes of the Settings window. `SettingsWindow` hosts each one in a
+// toolbar-style tab, so none of them draws its own tab bar.
 
-  var body: some View {
-    TabView {
-      SpacesTab(state: state, selection: selectedSpace)
-        .tabItem { Label("Spaces", systemImage: "rectangle.3.group") }
-      ShortcutsTab(state: state).tabItem { Label("Shortcuts", systemImage: "keyboard") }
-      GeneralTab(state: state).tabItem { Label("General", systemImage: "gear") }
-    }
-    .frame(width: 820, height: 480)
-  }
-}
+// MARK: - Projects
 
-// MARK: - Spaces
-
-private struct SpacesTab: View {
+struct ProjectsPane: View {
   @Bindable var state: AppState
   @State private var selection: String?  // space uuid
 
@@ -32,28 +19,33 @@ private struct SpacesTab: View {
   var body: some View {
     HSplitView {
       List(state.snapshot.spaces, selection: $selection) { space in
-        Text("\(space.number) \(state.displayName(for: space))").tag(space.uuid)
+        let named = !(state.project(for: space)?.name.isEmpty ?? true)
+        // An unnamed Space is dimmed so the named projects stand out.
+        Text(state.title(for: space))
+          .foregroundStyle(named ? .primary : .secondary)
+          .tag(space.uuid)
       }
       .frame(minWidth: 160, maxWidth: 220)
 
       if let space = state.snapshot.spaces.first(where: { $0.uuid == selection }) {
-        SpaceEditor(state: state, space: space)
+        ProjectEditor(state: state, space: space)
       } else {
-        Text("Select a space").frame(maxWidth: .infinity, maxHeight: .infinity)
+        Text("Select a project").frame(maxWidth: .infinity, maxHeight: .infinity)
       }
     }
     .padding()
+    .frame(width: 820, height: 480)
   }
 }
 
-private struct SpaceEditor: View {
-  private enum Field { case name, directory }
+private struct ProjectEditor: View {
+  private enum Field { case name, folder }
 
   @Bindable var state: AppState
   let space: Space
   @State private var newURL = ""
   @State private var name = ""
-  @State private var directory = ""
+  @State private var folder = ""
   @FocusState private var focused: Field?
 
   /// The saved record, or an unsaved default until the space is first edited.
@@ -69,7 +61,7 @@ private struct SpaceEditor: View {
 
   private func seed() {
     name = project.name
-    directory = project.directory
+    folder = project.directory
   }
 
   private func commitText() {
@@ -79,67 +71,73 @@ private struct SpaceEditor: View {
   private func commitText(to uuid: String) {
     guard let target = state.snapshot.spaces.first(where: { $0.uuid == uuid }) else { return }
     var configuration = state.configuration(for: target)
-    if name != configuration.name || directory != configuration.directory {
+    if name != configuration.name || folder != configuration.directory {
       configuration.name = name
-      configuration.directory = directory
+      configuration.directory = folder
       state.update(configuration)
     }
   }
 
   var body: some View {
     Form {
-      TextField("Name", text: $name)
+      // A blank name shows as "Desktop N", so the prompt says so.
+      TextField("Name", text: $name, prompt: Text("Desktop \(space.number)"))
         .focused($focused, equals: .name)
         .onSubmit(commitText)
 
-      Toggle(
-        "Open iTerm2 windows",
-        isOn: Binding(
-          get: { project.openTerminals },
-          set: { on in edit { $0.openTerminals = on } }))
+      Section("When Opening Project Windows") {
+        Toggle(
+          "iTerm2 windows",
+          isOn: Binding(
+            get: { project.openTerminals },
+            set: { on in edit { $0.openTerminals = on } }))
+        Toggle(
+          "Chrome window",
+          isOn: Binding(
+            get: { project.openChrome },
+            set: { on in edit { $0.openChrome = on } }))
+      }
 
       if project.openTerminals {
         Section("iTerm2") {
           HStack {
-            TextField("Directory", text: $directory, prompt: Text("Home folder"))
-              .focused($focused, equals: .directory)
+            TextField("Folder", text: $folder, prompt: Text("Home folder"))
+              .focused($focused, equals: .folder)
               .onSubmit(commitText)
             Button("Choose…") {
               let panel = NSOpenPanel()
               panel.canChooseDirectories = true
               panel.canChooseFiles = false
-              panel.directoryURL = URL(fileURLWithPath: directory.isEmpty ? NSHomeDirectory() : directory)
+              panel.directoryURL = URL(fileURLWithPath: folder.isEmpty ? NSHomeDirectory() : folder)
               if panel.runModal() == .OK, let url = panel.url {
-                directory = url.path
+                folder = url.path
                 edit { $0.directory = url.path }
               }
             }
           }
 
-          LabeledContent("Saved windows") {
+          LabeledContent("Saved Layout") {
             HStack {
-              Text("\(project.windows.count)")
-              Button("Save current windows") { state.saveTerminalWindows() }
+              Text(project.windows.count == 1 ? "1 window" : "\(project.windows.count) windows")
+              Button("Save Current Windows") { state.saveTerminalWindows() }
                 .disabled(!isCurrentSpace)
-              Button("Forget") { edit { $0.windows = [] } }
+              Button("Clear") { edit { $0.windows = [] } }
                 .disabled(project.windows.isEmpty)
             }
           }
           if !isCurrentSpace {
-            Text("Switch to this space to save its windows.")
+            Text("Switch to this project’s Space to save its windows.")
               .font(.caption).foregroundStyle(.secondary)
           }
         }
       }
 
-      Toggle(
-        "Open Chrome window",
-        isOn: Binding(
-          get: { project.openChrome },
-          set: { on in edit { $0.openChrome = on } }))
-
       if project.openChrome {
         Section("URLs") {
+          if project.urls.isEmpty {
+            Text("No URLs. Add the pages this project opens in Chrome.")
+              .foregroundStyle(.secondary)
+          }
           ForEach(Array(project.urls.enumerated()), id: \.offset) { index, url in
             HStack {
               Text(url).lineLimit(1).truncationMode(.middle)
@@ -150,6 +148,8 @@ private struct SpaceEditor: View {
                 Image(systemName: "chevron.up")
               }
               .buttonStyle(.borderless)
+              .help("Move Up")
+              .accessibilityLabel("Move Up")
               .disabled(index == 0)
               Button {
                 edit { $0.urls.swapAt(index, index + 1) }
@@ -157,6 +157,8 @@ private struct SpaceEditor: View {
                 Image(systemName: "chevron.down")
               }
               .buttonStyle(.borderless)
+              .help("Move Down")
+              .accessibilityLabel("Move Down")
               .disabled(index == project.urls.count - 1)
               Button {
                 edit { $0.urls.remove(at: index) }
@@ -164,10 +166,12 @@ private struct SpaceEditor: View {
                 Image(systemName: "minus.circle")
               }
               .buttonStyle(.borderless)
+              .help("Remove")
+              .accessibilityLabel("Remove")
             }
           }
           HStack {
-            TextField("https://…", text: $newURL)
+            TextField("URL", text: $newURL, prompt: Text("https://example.com"))
               .onSubmit(addURL)
             Button("Add", action: addURL)
               .disabled(!Self.isValidURL(newURL))
@@ -186,7 +190,7 @@ private struct SpaceEditor: View {
       seed()
     }
     .onChange(of: focused) { old, new in
-      if old == .name || old == .directory, new != old { commitText() }
+      if old == .name || old == .folder, new != old { commitText() }
     }
     .onDisappear(perform: commitText)
   }
@@ -205,35 +209,34 @@ private struct SpaceEditor: View {
 
 // MARK: - Shortcuts
 
-private struct ShortcutsTab: View {
+struct ShortcutsPane: View {
   @Bindable var state: AppState
-  @State private var trusted = false
 
   var body: some View {
     Form {
-      Section("Switch to space") {
-        ForEach(state.snapshot.spaces) { space in
-          LabeledContent("\(space.number) \(state.displayName(for: space))") {
-            if let combo = state.shortcut(for: space) {
-              Text(combo.display).monospaced()
-            } else {
-              Label("Not set — switching will not work", systemImage: "exclamationmark.triangle")
+      Section("Switch to Project") {
+        let missing = state.projectsWithoutShortcut
+        if missing.isEmpty {
+          Text("Every project has a shortcut.")
+            .foregroundStyle(.secondary)
+        }
+        ForEach(missing) { space in
+          LabeledContent(state.title(for: space)) {
+            HStack {
+              Label("No shortcut in System Settings", systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.orange)
+              Button("Open System Settings") { AppState.openMissionControlShortcutsPane() }
             }
           }
         }
-        HStack {
-          Text(
-            "These are the “Switch to Desktop N” shortcuts from System Settings > Keyboard > Keyboard Shortcuts > Mission Control."
-          )
-          .font(.caption).foregroundStyle(.secondary)
-          Spacer()
-          Button("Open System Settings") { AppState.openMissionControlShortcutsPane() }
-        }
+        Text(
+          "Switching uses the “Switch to Desktop N” shortcuts in System Settings > Keyboard > Keyboard Shortcuts > Mission Control."
+        )
+        .font(.caption).foregroundStyle(.secondary)
       }
 
-      Section("Open space setup") {
-        LabeledContent("Hotkey") {
+      Section("Open Project Windows") {
+        LabeledContent("Keyboard Shortcut") {
           KeyRecorderView(
             combo: Binding(
               get: { state.shortcuts.openProject },
@@ -245,13 +248,13 @@ private struct ShortcutsTab: View {
               }))
         }
         if !state.openHotKeyRegistered {
-          Text("Could not register this hotkey. Another app may already use it.")
+          Text("Could not register this shortcut. Another app may already use it.")
             .font(.caption).foregroundStyle(.secondary)
         }
       }
 
-      Section("Previous project") {
-        LabeledContent("Hotkey") {
+      Section("Previous Project") {
+        LabeledContent("Keyboard Shortcut") {
           KeyRecorderView(
             combo: Binding(
               get: { state.shortcuts.previousProject },
@@ -263,48 +266,37 @@ private struct ShortcutsTab: View {
               }))
         }
         if !state.previousHotKeyRegistered {
-          Text("Could not register this hotkey. Another app may already use it.")
+          Text("Could not register this shortcut. Another app may already use it.")
             .font(.caption).foregroundStyle(.secondary)
         }
         Text("Switches back to the project you were on before this one.")
           .font(.caption).foregroundStyle(.secondary)
       }
-
-      Section("Accessibility") {
-        LabeledContent("Status") {
-          HStack {
-            Text(trusted ? "Granted" : "Not granted")
-            Button("Open System Settings") { SpaceSwitcher.openAccessibilityPane() }
-            Button("Recheck") { trusted = state.accessibilityGranted }
-          }
-        }
-        Text("Needed to send the switch-space keystrokes.")
-          .font(.caption).foregroundStyle(.secondary)
-      }
     }
     .formStyle(.grouped)
-    .onAppear { trusted = state.accessibilityGranted }
+    .frame(width: 600, height: 420)
   }
 }
 
 // MARK: - General
 
-private struct GeneralTab: View {
+struct GeneralPane: View {
   @Bindable var state: AppState
   @State private var duration = 1.0
   @State private var launchAtLogin = false
   @State private var requiresApproval = false
+  @State private var trusted = false
 
   var body: some View {
     Form {
-      LabeledContent("Overlay visible for") {
+      LabeledContent("Show project name for") {
         HStack {
           Slider(value: $duration, in: 0.3...5, step: 0.1)
             .onChange(of: duration) { _, value in state.overlayDuration = value }
           Text(String(format: "%.1f s", duration)).monospacedDigit().frame(width: 44)
         }
       }
-      Toggle("Launch at login", isOn: $launchAtLogin)
+      Toggle("Open at Login", isOn: $launchAtLogin)
         .onChange(of: launchAtLogin) { _, value in
           state.launchAtLogin = value
           requiresApproval = SMAppService.mainApp.status == .requiresApproval
@@ -313,12 +305,30 @@ private struct GeneralTab: View {
         Text("Waiting for approval in System Settings > General > Login Items.")
           .font(.caption).foregroundStyle(.secondary)
       }
+
+      Section("Accessibility") {
+        LabeledContent("Status") {
+          HStack {
+            Text(trusted ? "Granted" : "Not granted")
+            Button("Open System Settings") { SpaceSwitcher.openAccessibilityPane() }
+          }
+        }
+        Text("Needed to send the switch-space keystrokes.")
+          .font(.caption).foregroundStyle(.secondary)
+      }
     }
     .formStyle(.grouped)
+    .frame(width: 600, height: 300)
     .onAppear {
       duration = state.overlayDuration
       launchAtLogin = state.launchAtLogin
       requiresApproval = SMAppService.mainApp.status == .requiresApproval
+      trusted = state.accessibilityGranted
+    }
+    // Granting access happens in System Settings, so the status is read again
+    // whenever the app comes back to the front.
+    .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+      trusted = state.accessibilityGranted
     }
   }
 }

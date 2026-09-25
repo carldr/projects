@@ -16,7 +16,7 @@ struct MenuBarView: View {
             }
           )
         ) {
-          Text("\(space.number) \(state.displayName(for: space))" + (hasShortcut ? "" : " (no shortcut)"))
+          Text(state.title(for: space) + (hasShortcut ? "" : " — No Shortcut"))
         }
         .disabled(!hasShortcut)
       }
@@ -32,14 +32,19 @@ struct MenuBarView: View {
 
       Divider()
 
-      Button("Open space setup") { state.openSpaceSetup() }
+      Button("Open Project Windows") { state.openSpaceSetup() }
         .disabled(!state.canOpenCurrentSpace)
-      Button("Save iTerm2 windows") { state.saveTerminalWindows() }
+      Button("Save iTerm2 Window Layout") { state.saveTerminalWindows() }
         .disabled(!state.canSaveCurrentSpace)
+      Button("Rename Project…") { AppDelegate.shared?.rename.show() }
+        .disabled(state.currentSpace == nil)
 
       Divider()
 
+      // ⌘, and ⌘Q act only while this menu is open, or while Settings is open and
+      // the app has a menu bar of its own; they are shown here as a Mac user expects.
       Button("Settings…") { AppDelegate.shared?.settings.show() }
+        .keyboardShortcut(",")
       Button("Quit Projects") { NSApplication.shared.terminate(nil) }
         .keyboardShortcut("q")
     }
@@ -49,7 +54,7 @@ struct MenuBarView: View {
   }
 
   @ViewBuilder private var previousProjectItem: some View {
-    let button = Button("Go to previous project") { state.switchToPrevious() }
+    let button = Button("Go to Previous Project") { state.switchToPrevious() }
       .disabled(!state.canSwitchToPrevious)
     let combo = state.shortcuts.previousProject
     if let key = combo.keyEquivalent {
