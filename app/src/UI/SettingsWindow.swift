@@ -76,10 +76,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     tabs.selectedTabViewItemIndex = 0
     if !window.isVisible { window.center() }
     NSApp.setActivationPolicy(.regular)
+    // Activation comes first and in this turn: the menu click that got here is what
+    // entitles the app to come forward, and deferring the request loses it, leaving
+    // the window behind the app that was in front.
+    NSApp.activate()
     window.makeKeyAndOrderFront(nil)
-    // Activating in the same runloop turn as the policy change leaves the menu bar
-    // drawn as it was for the agent app: its items show disabled although their key
-    // equivalents work. Activating on the next turn lets AppKit finish the switch.
-    DispatchQueue.main.async { NSApp.activate() }
   }
 }

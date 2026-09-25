@@ -43,12 +43,13 @@ export async function switchToPreviousSpace(): Promise<void> {
 
 /**
  * Projects cannot bring its own window forward from a script command: macOS activates
- * an app only when another app yields to it. Asking Projects to activate is that
- * yield, so the Settings window takes focus.
+ * an app only when the app in front yields to it, and nothing yields to a script.
+ * `open -b` asks Launch Services to activate Projects instead, which it does for a
+ * running app regardless of which app is in front.
  */
 export async function openSettings(): Promise<void> {
   await jxa(commandSource("openSettings"));
-  await jxa(commandSource("activate"));
+  await run("/usr/bin/open", ["-b", "uk.co.29degrees.projects"]);
 }
 
 /** Turns osascript's failures into something a Raycast toast can usefully say. */
