@@ -80,6 +80,15 @@ A full-screen window's Space never becomes the previous Space. A full-screen Spa
 
 The app registers Control+Option+Tab system-wide. Chrome and other apps cycle tabs on Control+Tab, and a system-wide Control+Tab would stop those apps from receiving the keystroke, so the default is Control+Option+Tab.
 
+## Names in Mission Control
+
+Mission Control's Spaces bar shows project names in place of "Desktop N", so the Spaces can be told apart while you drag them into a new order.
+
+- Before you hover the bar, the app covers the bar's row of captions with a row of its own, one name per Space, spaced evenly across the display. Click a name to switch to that Space.
+- Once you hover the top edge and the bar expands to thumbnails, each project's name replaces the caption under its thumbnail. A Space with no name keeps "Desktop N". The names follow the thumbnails as you drag them.
+
+The names appear on every display's Spaces bar.
+
 ## Setting up a Space
 
 Open Settings from the menu, with Command+comma while the menu is open, or with the Projects Settings command in Raycast. Settings opens on the Projects pane, with the current Space selected and its Name field ready to type into. The Projects pane lists every Space, with unnamed Spaces dimmed; click one to edit it. Command+Return in the Projects pane saves the Name and Folder fields and closes Settings. While Settings is open, Projects shows a Dock icon and its own menus in the menu bar.
@@ -152,4 +161,5 @@ Space setups are stored in `~/Library/Application Support/uk.co.29degrees.projec
 ## Caveats
 
 - Finding the current Space relies on a private macOS function. A macOS update could break it, in which case the menu shows "–" and an empty list.
+- The names in Mission Control are placed by reading the positions of Mission Control's own windows, which macOS does not document. The layout was measured on macOS 27; a macOS update that changes it would put the names out of place.
 - Not built for the App Store: the app is unsandboxed and uses a private API.
