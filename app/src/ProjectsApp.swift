@@ -8,10 +8,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   let state = AppState()
   private(set) lazy var settings = SettingsWindow(state: state)
+  private lazy var missionControlLabels = MissionControlLabels(state: state)
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     Self.shared = self
     state.start()
+    // The test bundle is hosted by the app; labels there would draw over the
+    // Mission Control of whoever runs the suite.
+    if !AppState.isRunningTests { missionControlLabels.start() }
   }
 
   /// The Dock icon exists only while Settings is open; its menu opens the current

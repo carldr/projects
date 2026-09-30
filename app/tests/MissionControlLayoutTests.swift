@@ -62,6 +62,16 @@ struct MissionControlLayoutTests {
     #expect(slots == [11: 0, 10: 1])
   }
 
+  @Test func findsBarsWithoutWindowNames() {
+    // Window names are withheld from an app without the Screen Recording permission.
+    var info = Self.info(id: 20, layer: 14, x: 0, y: 0, w: 3200, h: 96)
+    info[kCGWindowName as String] = nil
+    #expect(
+      MissionControlLayout.bars(in: [info]) == [
+        MissionControlBar(frame: CGRect(x: 0, y: 0, width: 3200, height: 96), thumbnails: [])
+      ])
+  }
+
   @Test func findsEachBarWithItsThumbnailsInOrder() {
     let bars = MissionControlLayout.bars(in: Self.expanded)
     #expect(

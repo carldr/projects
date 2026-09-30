@@ -28,12 +28,12 @@ nonisolated struct MissionControlBar: Equatable, Sendable {
 /// Reads Mission Control's Spaces bars from the window list. macOS offers no
 /// API for the bar and, from macOS 27, the Dock's accessibility tree no longer
 /// describes it: Mission Control is drawn by WindowManager, which puts each
-/// display's bar in a window named "Spaces Bar" and, while the bar is expanded,
-/// each Space's thumbnail in a window of its own one layer above. Bounds, owner
-/// and name are all readable without the Screen Recording permission.
+/// display's bar in a window on layer 14 and, while the bar is expanded, each
+/// Space's thumbnail in a window of its own one layer above. Owner, layer and
+/// bounds are readable without the Screen Recording permission. The bar's
+/// window name, "Spaces Bar", is not, so windows are told apart by layer alone.
 nonisolated enum MissionControlLayout {
   static let owner = "WindowManager"
-  static let barName = "Spaces Bar"
   static let barLayer = 14
   static let thumbnailLayer = 15
 
@@ -80,7 +80,7 @@ nonisolated enum MissionControlLayout {
         let frame = CGRect(dictionaryRepresentation: dict)
       else { continue }
       let layer = info[kCGWindowLayer as String] as? Int
-      if layer == barLayer, info[kCGWindowName as String] as? String == barName {
+      if layer == barLayer {
         barFrames.append(frame)
       } else if layer == thumbnailLayer, let id = info[kCGWindowNumber as String] as? Int {
         thumbnails.append(MissionControlThumbnail(windowID: id, frame: frame))
