@@ -45,6 +45,17 @@ struct SpaceListTests {
     #expect(SpaceList.parse(displays).spaces.map(\.uuid) == ["a"])
   }
 
+  @Test func missionControlSlotsKeepFullScreenSpacesInPlace() {
+    let slots = SpaceList.missionControlSlots(
+      Self.display(
+        spaces: [Self.entry("a"), Self.entry("fs", type: 4), Self.entry("b")],
+        current: Self.entry("a")))
+    #expect(
+      slots == [
+        .desktop(Space(uuid: "a", number: 1)), .fullScreen, .desktop(Space(uuid: "b", number: 2)),
+      ])
+  }
+
   @Test func noDisplaysGivesEmpty() {
     #expect(SpaceList.parse([]) == .empty)
   }

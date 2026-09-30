@@ -6,6 +6,12 @@ nonisolated struct Space: Equatable, Identifiable, Sendable {
   var id: String { uuid }
 }
 
+/// One thumbnail in Mission Control's Spaces bar.
+nonisolated enum MissionControlSlot: Equatable, Sendable {
+  case desktop(Space)
+  case fullScreen
+}
+
 nonisolated struct SpaceSnapshot: Equatable, Sendable {
   let spaces: [Space]
   let currentUUID: String?
