@@ -63,6 +63,15 @@ struct MissionControlLayoutTests {
     #expect(slots == [11: 0, 10: 1])
   }
 
+  @Test func aWindowAppearingDuringADragShowsTheDraggedSpace() {
+    // Window 12 is new: the thumbnail under the pointer, drawn by WindowManager
+    // in a window of its own while it is dragged.
+    let slots = MissionControlLayout.slots(
+      for: [Self.thumbnail(10, x: 65), Self.thumbnail(12, x: 200), Self.thumbnail(11, x: 400)],
+      keeping: [11: 0, 10: 1], dragging: true, draggedSlot: 0)
+    #expect(slots == [11: 0, 10: 1, 12: 0])
+  }
+
   @Test func afterADropThumbnailsTakeSlotsByPosition() {
     // The drop has swapped the two Spaces; the thumbnails are named left to right
     // against the Space order read afresh, whatever they showed before.

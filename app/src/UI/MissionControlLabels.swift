@@ -25,6 +25,10 @@ final class MissionControlLabels {
   private var labels: [MissionControlLabel] = []
   /// Per bar, keyed by the bar's origin, which does not move as it expands.
   private var slots: [String: [Int: Int]] = [:]
+  /// Per bar, the slot of the thumbnail under the pointer when the button went
+  /// down, for the window WindowManager draws the dragged thumbnail in.
+  private var draggedSlots: [String: Int] = [:]
+  private var wasDragging = false
   /// A Space clicked in a collapsed bar. Mission Control is closed first, and the
   /// switch waits until it has gone, since the Space shortcut does nothing while
   /// Mission Control is on screen.
@@ -59,6 +63,17 @@ final class MissionControlLabels {
     schedule(Self.openInterval)
     let dragging = NSEvent.pressedMouseButtons != 0
     if !dragging || labels.isEmpty { labels = state.missionControlLabels() }
+    if dragging, !wasDragging, let pointer = CGEvent(source: nil)?.location {
+      for bar in bars {
+        let key = Self.key(for: bar)
+        if let thumbnail = bar.thumbnails.first(where: { $0.frame.contains(pointer) }) {
+          draggedSlots[key] = slots[key]?[thumbnail.windowID]
+        }
+      }
+    } else if !dragging {
+      draggedSlots = [:]
+    }
+    wasDragging = dragging
     while panels.count < bars.count {
       panels.append(BarPanel { [weak self] space in self?.select(space) })
     }
@@ -69,30 +84,41 @@ final class MissionControlLabels {
   }
 
   private func content(for bar: MissionControlBar, dragging: Bool) -> BarContent {
-    let key = "\(bar.frame.minX),\(bar.frame.minY)"
+    let key = Self.key(for: bar)
     if bar.thumbnails.isEmpty {
       slots[key] = nil
       let cells = MissionControlLayout.cells(across: bar.frame, count: labels.count)
       return .collapsed(zip(labels, cells).map { ($0, $1) })
     }
+    let previous = slots[key] ?? [:]
     // A thumbnail count that differs from the Spaces leaves no way to tell which
-    // thumbnail is which, so the captions are left as they are.
-    guard bar.thumbnails.count == labels.count else { return .expanded([]) }
+    // thumbnail is which, so the captions are left as they are. A drag is the
+    // exception: it adds a window for the dragged thumbnail, and the slots taken
+    // before it began still say which thumbnail is which.
+    guard bar.thumbnails.count == labels.count || (dragging && !previous.isEmpty) else {
+      return .expanded([])
+    }
     let slots = MissionControlLayout.slots(
-      for: bar.thumbnails, keeping: self.slots[key] ?? [:], dragging: dragging)
+      for: bar.thumbnails, keeping: previous, dragging: dragging, draggedSlot: draggedSlots[key])
     self.slots[key] = slots
     return .expanded(
       bar.thumbnails.compactMap { thumbnail in
-        guard let slot = slots[thumbnail.windowID] else { return nil }
+        guard let slot = slots[thumbnail.windowID], slot < labels.count else { return nil }
         let label = labels[slot]
         return label.isProject ? (label, MissionControlLayout.caption(of: thumbnail.frame)) : nil
       })
+  }
+
+  /// A bar's origin, which does not move as the bar expands.
+  private static func key(for bar: MissionControlBar) -> String {
+    "\(bar.frame.minX),\(bar.frame.minY)"
   }
 
   private func closed() {
     for panel in panels { panel.hide() }
     labels = []
     slots = [:]
+    draggedSlots = [:]
     schedule(Self.closedInterval)
     if let space = pendingSwitch {
       pendingSwitch = nil
