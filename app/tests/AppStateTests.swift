@@ -121,6 +121,23 @@ struct AppStateTests {
     #expect(state.projectsWithoutShortcut.map(\.uuid) == ["c"])
   }
 
+  @Test func missionControlLabelsNameEachThumbnailInBarOrder() {
+    let displays: [[String: Any]] = [
+      [
+        "Spaces": [["uuid": "a", "type": 0], ["uuid": "fs", "type": 4], ["uuid": "b", "type": 0]],
+        "Current Space": ["uuid": "b", "type": 0],
+      ]
+    ]
+    let state = makeState(FakeProvider(displays))
+    state.projects.add(Project(name: "Website", directory: "", spaceUUID: "b"))
+    #expect(
+      state.missionControlLabels() == [
+        MissionControlLabel(text: "Desktop 1", space: Space(uuid: "a", number: 1), isProject: false, isCurrent: false),
+        MissionControlLabel(text: "Full Screen", space: nil, isProject: false, isCurrent: false),
+        MissionControlLabel(text: "Website", space: Space(uuid: "b", number: 2), isProject: true, isCurrent: true),
+      ])
+  }
+
   @Test func titleWhenCurrentIsNotADesktop() {
     let state = makeState(FakeProvider(Self.displays(["a"], current: "fullscreen")))
     state.refresh(announce: false)

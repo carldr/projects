@@ -1,6 +1,17 @@
 import CoreGraphics
 import Foundation
 
+/// What to write on one thumbnail in the Spaces bar.
+nonisolated struct MissionControlLabel: Equatable, Sendable {
+  let text: String
+  /// Nil for a full-screen Space, which has no Mission Control shortcut and so
+  /// cannot be switched to by clicking its label.
+  let space: Space?
+  /// False where the text is only the "Desktop N" that Mission Control shows anyway.
+  let isProject: Bool
+  let isCurrent: Bool
+}
+
 nonisolated struct MissionControlThumbnail: Equatable, Sendable {
   let windowID: Int
   let frame: CGRect

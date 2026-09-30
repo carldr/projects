@@ -150,6 +150,25 @@ final class AppState {
     }
   }
 
+  /// One label per thumbnail in Mission Control's Spaces bar, left to right. Read
+  /// live from the provider rather than from `snapshot`, which only changes when
+  /// the Space does, while Spaces are added, removed and reordered in Mission Control.
+  func missionControlLabels() -> [MissionControlLabel] {
+    let displays = provider.displaySpaces()
+    let current = SpaceList.parse(displays).currentUUID
+    return SpaceList.missionControlSlots(displays).map { slot in
+      switch slot {
+      case .desktop(let space):
+        let name = project(for: space)?.name ?? ""
+        return MissionControlLabel(
+          text: name.isEmpty ? "Desktop \(space.number)" : name, space: space, isProject: !name.isEmpty,
+          isCurrent: space.uuid == current)
+      case .fullScreen:
+        return MissionControlLabel(text: "Full Screen", space: nil, isProject: false, isCurrent: false)
+      }
+    }
+  }
+
   func shortcut(for space: Space) -> KeyCombo? { missionControlShortcuts[space.number] }
 
   /// Named Spaces with no Mission Control shortcut, which cannot be switched to.
