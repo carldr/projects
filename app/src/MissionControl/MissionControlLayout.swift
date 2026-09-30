@@ -49,13 +49,18 @@ nonisolated enum MissionControlLayout {
   }
 
   /// Which Space each thumbnail window shows, as an index into the bar's Spaces,
-  /// keyed by window ID. Thumbnails seen for the first time take the Spaces in
-  /// left-to-right order. After that each window keeps its Space while it stays
-  /// on screen, because a thumbnail being dragged, and the ones moving aside for
-  /// it, change position without changing which Space they show.
-  static func slots(for thumbnails: [MissionControlThumbnail], keeping previous: [Int: Int]) -> [Int: Int] {
+  /// keyed by window ID. Thumbnails take the Spaces in left-to-right order. While
+  /// a drag is in progress each window keeps the Space it had when the drag
+  /// began, because the thumbnail being dragged, and the ones moving aside for
+  /// it, change position without changing which Space they show. Once the drop
+  /// has changed the Space order, the windows are named by position again:
+  /// holding on to a window's Space past the drop left the names where they were
+  /// while the Spaces swapped places.
+  static func slots(
+    for thumbnails: [MissionControlThumbnail], keeping previous: [Int: Int], dragging: Bool
+  ) -> [Int: Int] {
     let ids = thumbnails.map(\.windowID)
-    if !previous.isEmpty, Set(ids) == Set(previous.keys) { return previous }
+    if dragging, !previous.isEmpty, Set(ids) == Set(previous.keys) { return previous }
     return Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($1, $0) })
   }
 

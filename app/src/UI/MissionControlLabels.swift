@@ -19,11 +19,10 @@ final class MissionControlLabels {
   private var timer: Timer?
   private var interval: TimeInterval = 0
   private var panels: [BarPanel] = []
-  /// Read when Mission Control opens, and again whenever the thumbnail windows
-  /// change: a Space added or removed, or thumbnails rebuilt after a drop, leave
-  /// the Spaces in a different order from the labels read before.
-  private var labels: [MissionControlLabel]?
-  private var thumbnailIDs: Set<Int> = []
+  /// Read afresh on every tick, so a drop, or a Space added or removed, shows at
+  /// once. Held while a mouse button is down, so that the labels stay in the
+  /// order the window-ID slots were taken in during a drag.
+  private var labels: [MissionControlLabel] = []
   /// Per bar, keyed by the bar's origin, which does not move as it expands.
   private var slots: [String: [Int: Int]] = [:]
   /// A Space clicked in a collapsed bar. Mission Control is closed first, and the
@@ -58,33 +57,29 @@ final class MissionControlLabels {
       return
     }
     schedule(Self.openInterval)
-    let ids = Set(bars.flatMap { $0.thumbnails.map(\.windowID) })
-    if self.labels == nil || ids != thumbnailIDs {
-      self.labels = state.missionControlLabels()
-      thumbnailIDs = ids
-    }
-    let labels = self.labels ?? []
+    let dragging = NSEvent.pressedMouseButtons != 0
+    if !dragging || labels.isEmpty { labels = state.missionControlLabels() }
     while panels.count < bars.count {
       panels.append(BarPanel { [weak self] space in self?.select(space) })
     }
     for (panel, bar) in zip(panels, bars) {
-      panel.show(content(for: bar, labels: labels), over: bar.frame)
+      panel.show(content(for: bar, dragging: dragging), over: bar.frame)
     }
     for panel in panels.dropFirst(bars.count) { panel.hide() }
   }
 
-  private func content(for bar: MissionControlBar, labels: [MissionControlLabel]) -> BarContent {
+  private func content(for bar: MissionControlBar, dragging: Bool) -> BarContent {
     let key = "\(bar.frame.minX),\(bar.frame.minY)"
     if bar.thumbnails.isEmpty {
       slots[key] = nil
       let cells = MissionControlLayout.cells(across: bar.frame, count: labels.count)
       return .collapsed(zip(labels, cells).map { ($0, $1) })
     }
-    // A thumbnail count that differs from the Spaces, even after the labels are
-    // read again, leaves no way to tell which thumbnail is which, so the captions
-    // are left as they are.
+    // A thumbnail count that differs from the Spaces leaves no way to tell which
+    // thumbnail is which, so the captions are left as they are.
     guard bar.thumbnails.count == labels.count else { return .expanded([]) }
-    let slots = MissionControlLayout.slots(for: bar.thumbnails, keeping: self.slots[key] ?? [:])
+    let slots = MissionControlLayout.slots(
+      for: bar.thumbnails, keeping: self.slots[key] ?? [:], dragging: dragging)
     self.slots[key] = slots
     return .expanded(
       bar.thumbnails.compactMap { thumbnail in
@@ -96,8 +91,7 @@ final class MissionControlLabels {
 
   private func closed() {
     for panel in panels { panel.hide() }
-    labels = nil
-    thumbnailIDs = []
+    labels = []
     slots = [:]
     schedule(Self.closedInterval)
     if let space = pendingSwitch {

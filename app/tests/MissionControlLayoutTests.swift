@@ -51,15 +51,24 @@ struct MissionControlLayoutTests {
   }
 
   @Test func newThumbnailsTakeSlotsLeftToRight() {
-    let slots = MissionControlLayout.slots(for: [Self.thumbnail(11, x: 65), Self.thumbnail(10, x: 257)], keeping: [:])
+    let slots = MissionControlLayout.slots(
+      for: [Self.thumbnail(11, x: 65), Self.thumbnail(10, x: 257)], keeping: [:], dragging: true)
     #expect(slots == [11: 0, 10: 1])
   }
 
   @Test func thumbnailsKeepTheirSlotsWhileBeingDragged() {
     // Window 11 has been dragged to the right of window 10.
     let slots = MissionControlLayout.slots(
-      for: [Self.thumbnail(10, x: 65), Self.thumbnail(11, x: 400)], keeping: [11: 0, 10: 1])
+      for: [Self.thumbnail(10, x: 65), Self.thumbnail(11, x: 400)], keeping: [11: 0, 10: 1], dragging: true)
     #expect(slots == [11: 0, 10: 1])
+  }
+
+  @Test func afterADropThumbnailsTakeSlotsByPosition() {
+    // The drop has swapped the two Spaces; the thumbnails are named left to right
+    // against the Space order read afresh, whatever they showed before.
+    let slots = MissionControlLayout.slots(
+      for: [Self.thumbnail(10, x: 65), Self.thumbnail(11, x: 257)], keeping: [11: 0, 10: 1], dragging: false)
+    #expect(slots == [10: 0, 11: 1])
   }
 
   @Test func findsBarsWithoutWindowNames() {
